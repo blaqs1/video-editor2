@@ -7435,7 +7435,7 @@ fun MainNavigationBar(
                         letterSpacing = 1.2.sp
                     )
                     Text(
-                        text = "CapCut AI Console • Bordeaux Edition",
+                        text = "AI Studio Console",
                         color = BordeauxMuted,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 8.sp

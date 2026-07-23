@@ -253,7 +253,7 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
             if (helpKeywords.any { lowerText.contains(it) }) {
                 isProcessingPrompt.value = false
                 val helpResponse = """
-                    👋 Hi! I'm your CapCut AI Director. Here is what I can do to edit your video:
+                    👋 Hi! I'm your AI Studio Director. Here is what I can do to edit your video:
 
                     📝 Auto Karaoke Captions — Burn word-highlighted subtitles directly from speech
                     ✂️ Silence Auto-Trim — Remove dead air, pauses & awkward gaps

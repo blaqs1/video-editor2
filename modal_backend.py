@@ -483,7 +483,7 @@ async def prompt_edit(
     if any(k in p_lower for k in help_keywords):
         return JSONResponse(status_code=200, content={
             "status": "info",
-            "message": "👋 Hi! I'm your CapCut AI Director. I can transcribe karaoke captions, auto-trim silences, speed up/slow down video, overlay B-roll graphics, apply color filters, and crop aspect ratios for TikTok/Reels!"
+            "message": "👋 Hi! I'm your AI Studio Director. I can transcribe karaoke captions, auto-trim silences, speed up/slow down video, overlay B-roll graphics, apply color filters, and crop aspect ratios for TikTok/Reels!"
         })
 
     # 2. Handle explicit boundaries for unsupported capabilities

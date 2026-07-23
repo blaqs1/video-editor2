@@ -141,7 +141,7 @@ fun PromptChatView(
                 }
                 Column {
                     Text(
-                        text = "CAPCUT AI DIRECTOR",
+                        text = "AI STUDIO DIRECTOR",
                         color = CapCutTextPrimary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
