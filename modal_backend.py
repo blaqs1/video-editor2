@@ -48,7 +48,7 @@ class TimelineSpec(BaseModel):
     events: List[ActionItem]
 
 # ==========================================
-# 3. ACCURACY GUARDRAILS & CAPTION HELPERS
+# 3. ACCURACY GUARDRAILS & KARAOKE CAPTIONS
 # ==========================================
 HERO_ASSET_LIBRARY = {
     "[Hero_Stress]": "OVERLAY/hero_stress.png",
@@ -74,7 +74,7 @@ def sanitize_coordinates(x_pct: float, y_pct: float, zoom_level: float):
     return safe_x, safe_y, safe_zoom
 
 def build_capcut_sine_zoom(zoom_factor: float, duration_seconds: float, center_x_pct: float, center_y_pct: float) -> str:
-    """Guardrail 5: Compiles CapCut sine-easing camera curves"""
+    """Guardrail 5: Programmatically compiles CapCut sine-easing camera curves"""
     duration_frames = int(duration_seconds * 30)
     sine_ease = f"(0.5*(1-cos(PI*on/{duration_frames})))"
     zoom_expr = f"1+({zoom_factor - 1.0})*{sine_ease}"
@@ -82,44 +82,67 @@ def build_capcut_sine_zoom(zoom_factor: float, duration_seconds: float, center_x
     y_expr = f"ih*{center_y_pct}"
     return f"zoompan=z='{zoom_expr}':x='{x_expr}':y='{y_expr}':d={duration_frames}:fps=30"
 
-def format_srt_time(seconds: float) -> str:
-    m, s = divmod(seconds, 60)
-    h, m = divmod(m, 60)
-    ms = int((s - int(s)) * 1000)
-    return f"{int(h):02d}:{int(m):02d}:{int(s):02d},{ms:03d}"
-
-def generate_short_captions(video_path: str, output_path: str, max_words_per_chunk: int = 6):
+def generate_karaoke_bordeaux_captions(video_path: str, output_path: str, max_words_per_phrase: int = 4):
     """
-    Transcribes audio and burns short captions (max 6-8 words)
-    using Bordeaux Red outline (#823334) without altering original audio quality.
+    Transcribes audio and burns word-by-word karaoke captions
+    where the active word gets a solid Bordeaux Red (#823334) background highlight.
     """
     from faster_whisper import WhisperModel
-    whisper_model = WhisperModel("medium.en", device="cuda", compute_type="float16")
     
-    srt_path = video_path.replace(".mp4", ".srt")
+    whisper_model = WhisperModel("medium.en", device="cuda", compute_type="float16")
     segments, _ = whisper_model.transcribe(video_path, word_timestamps=True)
     
-    all_chunks = []
-    current_chunk = []
+    ass_path = video_path.replace(".mp4", ".ass")
     
+    # ASS Hex Color format for #823334 is &H00343382 (BGR order)
+    ass_header = """[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Normal,Arial,48,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,3,0,2,10,10,80,1
+Style: Highlight,Arial,48,&H00FFFFFF,&H00FFFFFF,&H00343382,&H00343382,-1,0,0,0,100,100,0,0,3,4,0,2,10,10,80,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+
+    def format_ass_time(seconds: float) -> str:
+        m, s = divmod(seconds, 60)
+        h, m = divmod(m, 60)
+        cs = int((s - int(s)) * 100)
+        return f"{int(h)}:{int(m):02d}:{int(s):02d}.{cs:02d}"
+
+    words = []
     for segment in segments:
-        for word in segment.words:
-            current_chunk.append(word)
-            if len(current_chunk) >= max_words_per_chunk:
-                all_chunks.append(current_chunk)
-                current_chunk = []
-    if current_chunk:
-        all_chunks.append(current_chunk)
-        
-    with open(srt_path, "w", encoding="utf-8") as f:
-        for idx, chunk in enumerate(all_chunks, start=1):
-            start_str = format_srt_time(chunk[0].start)
-            end_str = format_srt_time(chunk[-1].end)
-            text = " ".join([w.word.strip() for w in chunk]).upper()
-            f.write(f"{idx}\n{start_str} --> {end_str}\n{text}\n\n")
+        for w in segment.words:
+            words.append(w)
             
-    style = "FontName=Arial,FontSize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00343382,BorderStyle=3,Bold=1,Alignment=2"
-    ffmpeg_cmd = f'ffmpeg -y -i "{video_path}" -vf "subtitles=\'{srt_path}\':force_style=\'{style}\',format=yuv420p" -c:a copy "{output_path}"'
+    phrases = [words[i:i + max_words_per_phrase] for i in range(0, len(words), max_words_per_phrase)]
+    
+    ass_events = []
+    for phrase in phrases:
+        for i, target_word in enumerate(phrase):
+            start_t = format_ass_time(target_word.start)
+            end_t = format_ass_time(target_word.end)
+            
+            formatted_text_parts = []
+            for j, w in enumerate(phrase):
+                clean_text = w.word.strip().upper()
+                if i == j:
+                    formatted_text_parts.append(f"{{\\rHighlight}}{clean_text}{{\\rNormal}}")
+                else:
+                    formatted_text_parts.append(clean_text)
+                    
+            line_text = " ".join(formatted_text_parts)
+            ass_events.append(f"Dialogue: 0,{start_t},{end_t},Normal,,0,0,0,,{line_text}")
+
+    with open(ass_path, "w", encoding="utf-8") as f:
+        f.write(ass_header + "\n".join(ass_events))
+
+    ffmpeg_cmd = f'ffmpeg -y -i "{video_path}" -vf "subtitles=\'{ass_path}\',format=yuv420p" -c:a copy "{output_path}"'
     subprocess.run(ffmpeg_cmd, shell=True, check=True)
 
 # ==========================================
@@ -190,7 +213,7 @@ async def execute_edit(
     intro: UploadFile = File(None)
 ):
     """
-    MASTER ENGINE: Executes FFmpeg commands with accuracy guardrails and auto-captioning.
+    MASTER ENGINE: Executes FFmpeg commands with accuracy guardrails and karaoke auto-captioning.
     """
     print(f"\n🎬 NEW EDIT REQUEST RECEIVED")
     print(f"Video: {filename}")
@@ -211,10 +234,10 @@ async def execute_edit(
     if intro:
         with open(intro_path, "wb") as f: shutil.copyfileobj(intro.file, f)
 
-    # Trigger short auto-captions if requested
+    # Trigger Karaoke Bordeaux auto-captions if requested
     if "caption" in command.lower() or "subtitle" in command.lower():
         try:
-            generate_short_captions(video_path, output_path, max_words_per_chunk=6)
+            generate_karaoke_bordeaux_captions(video_path, output_path, max_words_per_phrase=4)
             volume.commit()
             return FileResponse(output_path, media_type="video/mp4")
         except Exception as e:
@@ -240,7 +263,7 @@ async def execute_edit(
         if "format=yuv420p" not in final_cmd:
             final_cmd += " -pix_fmt yuv420p -r 30"
 
-    print(f"🚀 Executing FFmpeg Render: {final_cmd}")
+    print(f"🚀 Executing Guardrailed FFmpeg Render: {final_cmd}")
 
     try:
         process = subprocess.run(final_cmd, shell=True, capture_output=True, text=True)
@@ -248,7 +271,7 @@ async def execute_edit(
             print(f"❌ FFmpeg Error: {process.stderr}")
             return JSONResponse(status_code=500, content={"error": process.stderr})
 
-        print("🎉 Render successful! Sending video to app...")
+        print("🎉 Render successful! Returning video to Android app...")
         volume.commit()
         return FileResponse(output_path, media_type="video/mp4")
 
