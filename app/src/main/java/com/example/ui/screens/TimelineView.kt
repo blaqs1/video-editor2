@@ -236,7 +236,8 @@ private fun MainVideoTrack(
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(38.dp)
+            .height(54.dp)
+            .padding(vertical = 4.dp)
             .testTag("track_main_video")
     ) {
         Row(
@@ -261,12 +262,16 @@ private fun MainVideoTrack(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
+                    softWrap = false,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = "Track 1 • Main Video Clip • 1080P",
                     color = CapCutMutedGray,
-                    fontSize = 8.5.sp
+                    fontSize = 8.5.sp,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -275,7 +280,15 @@ private fun MainVideoTrack(
                     .background(CapCutBordeauxRed, RoundedCornerShape(4.dp))
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
-                Text("MAIN", color = CapCutTextWhite, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "MAIN",
+                    color = CapCutTextWhite,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
@@ -298,7 +311,8 @@ private fun OverlaysTrack(
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(34.dp)
+            .height(54.dp)
+            .padding(vertical = 4.dp)
             .testTag("track_overlays")
     ) {
         Row(
@@ -307,7 +321,15 @@ private fun OverlaysTrack(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Icon(Icons.Default.Layers, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(14.dp))
-            Text("Track 2 Overlays:", color = CapCutMutedGray, fontSize = 9.sp, fontWeight = FontWeight.Medium)
+            Text(
+                text = "Track 2 Overlays:",
+                color = CapCutMutedGray,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
+            )
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -332,7 +354,10 @@ private fun OverlaysTrack(
                             text = name,
                             color = Color(0xFF7DD3FC),
                             fontSize = 9.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -357,7 +382,8 @@ private fun CaptionsTrack(
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(34.dp)
+            .height(54.dp)
+            .padding(vertical = 4.dp)
             .testTag("track_captions")
     ) {
         Row(
@@ -366,7 +392,15 @@ private fun CaptionsTrack(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Icon(Icons.Default.ClosedCaption, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(14.dp))
-            Text("Track 3 Captions:", color = CapCutMutedGray, fontSize = 9.sp, fontWeight = FontWeight.Medium)
+            Text(
+                text = "Track 3 Captions:",
+                color = CapCutMutedGray,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
+            )
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -390,6 +424,7 @@ private fun CaptionsTrack(
                             color = Color(0xFFFDE68A),
                             fontSize = 9.sp,
                             maxLines = 1,
+                            softWrap = false,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
@@ -415,7 +450,8 @@ private fun AudioWaveformTrack(
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(36.dp)
+            .height(54.dp)
+            .padding(vertical = 4.dp)
             .testTag("track_audio_waveform")
     ) {
         Row(
@@ -431,6 +467,7 @@ private fun AudioWaveformTrack(
                 fontSize = 9.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
+                softWrap = false,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.widthIn(max = 140.dp)
             )
