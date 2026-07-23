@@ -66,37 +66,9 @@ object SupabaseClient {
         val baseUrl = url.removeSuffix("/")
         val key = apiKey
 
-        // Step 1: Verify API Key and URL against Supabase REST root endpoint (/rest/v1/)
-        val rootEndpoint = "$baseUrl/rest/v1/"
-        val rootRequest = Request.Builder()
-            .url(rootEndpoint)
-            .addHeader("apikey", key)
-            .addHeader("Authorization", "Bearer $key")
-            .get()
-            .build()
-
-        try {
-            client.newCall(rootRequest).execute().use { rootResponse ->
-                if (!rootResponse.isSuccessful && rootResponse.code == 401) {
-                    val bodyStr = rootResponse.body?.string() ?: ""
-                    return DiagnosticResult(
-                        isConnected = false,
-                        statusCode = 401,
-                        message = "Invalid API Key or URL (HTTP 401 Unauthorized). Please check that your SUPABASE_URL and SUPABASE_ANON_KEY match your Supabase project settings.",
-                        rawResponseBody = bodyStr
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            return DiagnosticResult(
-                isConnected = false,
-                statusCode = -1,
-                message = "Cannot connect to Supabase host ($baseUrl): ${e.localizedMessage}",
-                rawResponseBody = null
-            )
-        }
-
-        // Step 2: Query requested table
+        // Query the requested table directly.
+        // Note: The REST root endpoint (/rest/v1/) requires the service_role key,
+        // so we skip it and validate by querying an actual table with the anon key.
         return try {
             val endpoint = "$baseUrl/rest/v1/$tableName?select=*&limit=1"
             val request = Request.Builder()
@@ -108,21 +80,46 @@ object SupabaseClient {
 
             client.newCall(request).execute().use { response ->
                 val respBody = response.body?.string()
-                if (response.isSuccessful) {
-                    DiagnosticResult(
-                        isConnected = true,
-                        statusCode = response.code,
-                        message = "Connection successful! Fetched data from '$tableName' (HTTP ${response.code}).",
-                        rawResponseBody = respBody
-                    )
-                } else {
-                    val detail = if (!respBody.isNullOrBlank()) " ($respBody)" else ""
-                    DiagnosticResult(
-                        isConnected = false,
-                        statusCode = response.code,
-                        message = "Supabase API key is valid, but query to table '$tableName' returned HTTP ${response.code}: ${response.message}$detail",
-                        rawResponseBody = respBody
-                    )
+                when {
+                    response.isSuccessful -> {
+                        DiagnosticResult(
+                            isConnected = true,
+                            statusCode = response.code,
+                            message = "Connection successful! Fetched data from '$tableName' (HTTP ${response.code}).",
+                            rawResponseBody = respBody
+                        )
+                    }
+                    response.code == 401 -> {
+                        // Distinguish between invalid key vs. RLS permission issue
+                        val hint = respBody ?: ""
+                        val isRlsIssue = hint.contains("permission denied", ignoreCase = true) ||
+                                hint.contains("42501")
+                        if (isRlsIssue) {
+                            DiagnosticResult(
+                                isConnected = false,
+                                statusCode = 401,
+                                message = "API key is valid but Row Level Security (RLS) is blocking access to '$tableName'. " +
+                                        "Please enable RLS policies or grant SELECT/INSERT to the anon role in Supabase.",
+                                rawResponseBody = respBody
+                            )
+                        } else {
+                            DiagnosticResult(
+                                isConnected = false,
+                                statusCode = 401,
+                                message = "Invalid API Key or URL (HTTP 401). Please check your SUPABASE_URL and SUPABASE_ANON_KEY.",
+                                rawResponseBody = respBody
+                            )
+                        }
+                    }
+                    else -> {
+                        val detail = if (!respBody.isNullOrBlank()) " ($respBody)" else ""
+                        DiagnosticResult(
+                            isConnected = false,
+                            statusCode = response.code,
+                            message = "Supabase query to '$tableName' returned HTTP ${response.code}: ${response.message}$detail",
+                            rawResponseBody = respBody
+                        )
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -130,7 +127,7 @@ object SupabaseClient {
             DiagnosticResult(
                 isConnected = false,
                 statusCode = -1,
-                message = "Network query failed: ${e.localizedMessage}",
+                message = "Cannot connect to Supabase host ($baseUrl): ${e.localizedMessage}",
                 rawResponseBody = null
             )
         }
@@ -140,11 +137,11 @@ object SupabaseClient {
         if (!isConfigured) return false
         val diag = runConnectionDiagnostics("config")
         if (diag.isConnected) return true
-        // Fallback root ping
+        // Fallback: try querying any table to verify connectivity
         return try {
             val baseUrl = url.removeSuffix("/")
             val key = apiKey
-            val endpoint = "$baseUrl/rest/v1/"
+            val endpoint = "$baseUrl/rest/v1/config?select=key&limit=1"
 
             val request = Request.Builder()
                 .url(endpoint)
