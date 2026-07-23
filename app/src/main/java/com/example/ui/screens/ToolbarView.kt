@@ -74,73 +74,65 @@ fun ToolbarView(
     var activeSheetTool by remember { mutableStateOf<String?>(null) }
     
     val tools = listOf(
-        ActionTool("edit", "Edit", Icons.Default.ContentCut, "tool_btn_edit"),
-        ActionTool("audio", "Audio", Icons.Default.MusicNote, "tool_btn_audio"),
-        ActionTool("text", "Text", Icons.Default.Title, "tool_btn_text"),
-        ActionTool("overlay", "Overlay", Icons.Default.Layers, "tool_btn_overlay"),
-        ActionTool("captions", "Captions", Icons.Default.ClosedCaption, "tool_btn_captions"),
-        ActionTool("brand", "Brand", Icons.Default.AutoAwesome, "tool_btn_brand")
+        ActionTool("back", "", Icons.Default.ChevronLeft, "tool_btn_back"),
+        ActionTool("edit", "Split", Icons.Default.ContentCut, "tool_btn_edit"),
+        ActionTool("text", "Style", Icons.Default.Title, "tool_btn_text"),
+        ActionTool("captions", "Edit captions", Icons.Default.Edit, "tool_btn_captions"),
+        ActionTool("overlay", "Duplicate", Icons.Default.ContentCopy, "tool_btn_overlay"),
+        ActionTool("delete", "Delete", Icons.Default.Delete, "tool_btn_delete"),
+        ActionTool("brand", "High quality", Icons.Default.AutoAwesome, "tool_btn_brand")
     )
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(CapCutDarkSlate)
-            .border(BorderStroke(1.dp, CapCutBorderSlate))
+            .background(Color(0xFF0C0C10))
             .navigationBarsPadding()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 4.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             tools.forEach { tool ->
                 val isSelected = activeSheetTool == tool.id
-                
+
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(
-                            if (isSelected) CapCutBordeauxRed.copy(alpha = 0.25f) else Color.Transparent
-                        )
-                        .border(
-                            width = if (isSelected) 1.dp else 0.dp,
-                            color = if (isSelected) CapCutBordeauxRed else Color.Transparent,
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                        .clickable { activeSheetTool = tool.id }
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                        .clickable {
+                            if (tool.id != "back" && tool.id != "delete") {
+                                activeSheetTool = tool.id
+                            }
+                        }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                         .testTag(tool.tag)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
-                            .background(
-                                color = if (isSelected) CapCutBordeauxRed else Color(0xFF222230),
-                                shape = CircleShape
-                            ),
+                            .size(32.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = tool.icon,
                             contentDescription = tool.title,
-                            tint = if (isSelected) CapCutTextWhite else CapCutMutedGray,
+                            tint = if (isSelected) Color(0xFF80F3FF) else Color.White,
                             modifier = Modifier.size(20.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = tool.title,
-                        color = if (isSelected) CapCutTextWhite else CapCutMutedGray,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                    )
+                    if (tool.title.isNotEmpty()) {
+                        Text(
+                            text = tool.title,
+                            color = if (isSelected) Color(0xFF80F3FF) else Color.White.copy(alpha = 0.9f),
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }

@@ -2692,6 +2692,8 @@ fun AudioVideoSyncStatusBadge(
 
 // Custom Viewport for Interactive Coordinates Mapping and Video Playback (CapCut Style)
 @Composable
+// Custom Viewport for Interactive Coordinates Mapping and Video Playback (CapCut Style)
+@Composable
 fun VideoPlayerViewport(
     capturedX: Float,
     capturedY: Float,
@@ -2702,47 +2704,33 @@ fun VideoPlayerViewport(
     onAutoTrimClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val cacheFile = remember(videoName) { File(context.cacheDir, videoName) }
+    val cacheFile = remember(videoName) {
+        val f = File(videoName)
+        if (f.exists()) f else File(context.cacheDir, videoName)
+    }
     val fileExists = remember(videoName) { cacheFile.exists() }
 
     var isPlaying by remember { mutableStateOf(false) }
     var currentPositionMs by remember { mutableStateOf(0) }
-    var durationMs by remember { mutableStateOf(10000) } // Default 10 seconds if empty
-    var isDraggingSlider by remember { mutableStateOf(false) }
+    var durationMs by remember { mutableStateOf(324000) } // 05:24 duration like CapCut sample
     var isMuted by remember { mutableStateOf(false) }
-
     var playerMode by remember { mutableStateOf("preview") } // "preview", "grid", or "trim"
     var videoViewInstance by remember { mutableStateOf<android.widget.VideoView?>(null) }
-
-    var trimStartSec by remember { mutableFloatStateOf(0f) }
-    var trimEndSec by remember { mutableFloatStateOf(10f) }
-
-    LaunchedEffect(durationMs) {
-        if (trimEndSec == 10f || trimEndSec > durationMs / 1000f) {
-            val maxS = (durationMs / 1000f)
-            trimEndSec = if (maxS > 0f) maxS else 10f
-        }
-    }
 
     // Periodic timer to update currentPositionMs when video plays
     LaunchedEffect(isPlaying) {
         if (isPlaying) {
             while (true) {
-                if (!isDraggingSlider) {
-                    videoViewInstance?.let { view ->
-                        currentPositionMs = view.currentPosition
-                        val dur = view.duration
-                        if (dur > 0) {
-                            durationMs = dur
-                        }
-                    } ?: run {
-                        // Simulated fallback playing progress
-                        if (currentPositionMs < durationMs) {
-                            currentPositionMs += 250
-                        } else {
-                            currentPositionMs = 0
-                            isPlaying = false
-                        }
+                videoViewInstance?.let { view ->
+                    currentPositionMs = view.currentPosition
+                    val dur = view.duration
+                    if (dur > 0) durationMs = dur
+                } ?: run {
+                    if (currentPositionMs < durationMs) {
+                        currentPositionMs += 250
+                    } else {
+                        currentPositionMs = 0
+                        isPlaying = false
                     }
                 }
                 kotlinx.coroutines.delay(250)
@@ -2760,79 +2748,21 @@ fun VideoPlayerViewport(
 
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .background(BordeauxSurface, RoundedCornerShape(16.dp))
-            .border(1.dp, BordeauxBorder, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
+            .fillMaxSize()
+            .background(Color(0xFF0C0C10))
     ) {
-        // Player header tab switcher
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(BordeauxSurfaceElevated)
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Box(modifier = Modifier.size(6.dp).background(BordeauxRed, CircleShape))
-                Text(
-                    text = "VIDEO MONITOR",
-                    fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    color = BordeauxTextPrimary
-                )
-            }
-
-            // Segmented Switcher Bar
-            Row(
-                modifier = Modifier
-                    .background(BordeauxBackground, RoundedCornerShape(20.dp))
-                    .border(1.dp, BordeauxBorder, RoundedCornerShape(20.dp))
-                    .padding(2.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                listOf(
-                    "preview" to "PREVIEW",
-                    "grid" to "GRID EDIT",
-                    "trim" to "TRIM RANGE"
-                ).forEach { (modeKey, label) ->
-                    val isSel = playerMode == modeKey
-                    Text(
-                        text = label,
-                        fontSize = 8.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isSel) StudioAccentWhite else BordeauxMuted,
-                        modifier = Modifier
-                            .background(
-                                color = if (isSel) BordeauxRed else Color.Transparent,
-                                shape = RoundedCornerShape(20.dp)
-                            )
-                            .clickable { playerMode = modeKey }
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-            }
-        }
-
-        // Viewport Box
+        // Main CapCut Video Viewport Canvas
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
-                .background(StudioBlack)
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFF4C1D24)) // Dark bordeaux maroon background like CapCut sample
                 .pointerInput(playerMode) {
-                    if (playerMode == "grid") {
-                        detectTapGestures { offset ->
-                            val xPct = (offset.x / size.width) * 100f
-                            val yPct = (offset.y / size.height) * 100f
-                            onTap(xPct, yPct)
-                        }
+                    detectTapGestures { offset ->
+                        val xPct = (offset.x / size.width) * 100f
+                        val yPct = (offset.y / size.height) * 100f
+                        onTap(xPct, yPct)
                     }
                 },
             contentAlignment = Alignment.Center
@@ -2846,105 +2776,129 @@ fun VideoPlayerViewport(
                             setOnPreparedListener { mp ->
                                 durationMs = mp.duration
                                 mp.isLooping = true
-                                if (isMuted) {
-                                    mp.setVolume(0f, 0f)
-                                } else {
-                                    mp.setVolume(1f, 1f)
-                                }
+                                if (isMuted) mp.setVolume(0f, 0f) else mp.setVolume(1f, 1f)
                             }
-                            setOnCompletionListener {
-                                isPlaying = false
-                            }
-                        }.also {
-                            videoViewInstance = it
-                        }
+                            setOnCompletionListener { isPlaying = false }
+                        }.also { videoViewInstance = it }
                     },
                     update = { view ->
-                        if (isPlaying) {
-                            if (!view.isPlaying) {
-                                view.start()
-                            }
-                        } else {
-                            if (view.isPlaying) {
-                                view.pause()
-                            }
-                        }
+                        if (isPlaying && !view.isPlaying) view.start()
+                        else if (!isPlaying && view.isPlaying) view.pause()
                     },
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                // Background grid canvas (always shown in "grid" mode, and as fallback in "preview" mode if no file exists)
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = 1f
-                    drawLine(
-                        color = StudioBorderGray.copy(alpha = 0.4f),
-                        start = Offset(0f, size.height / 2f),
-                        end = Offset(size.width, size.height / 2f),
-                        strokeWidth = strokeWidth
-                    )
-                    drawLine(
-                        color = StudioBorderGray.copy(alpha = 0.4f),
-                        start = Offset(size.width / 2f, 0f),
-                        end = Offset(size.width / 2f, size.height),
-                        strokeWidth = strokeWidth
-                    )
-                    
-                    val cols = 4
-                    val rows = 4
-                    for (i in 1 until cols) {
-                        val x = (size.width / cols) * i
-                        drawLine(
-                            color = StudioBorderGray.copy(alpha = 0.2f),
-                            start = Offset(x, 0f),
-                            end = Offset(x, size.height),
-                            strokeWidth = strokeWidth,
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
-                        )
-                    }
-                    for (i in 1 until rows) {
-                        val y = (size.height / rows) * i
-                        drawLine(
-                            color = StudioBorderGray.copy(alpha = 0.2f),
-                            start = Offset(0f, y),
-                            end = Offset(size.width, y),
-                            strokeWidth = strokeWidth,
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
-                        )
-                    }
-                }
-
-                // If simulated preview (no file or simulated preview mode)
-                if (playerMode == "preview" && !fileExists) {
+                // Simulated High Quality CapCut Video Monitor Screen (Office Coach Brand Canvas)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color(0xFF5A1C20), Color(0xFF381014))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.padding(16.dp)
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.MovieFilter,
-                            contentDescription = "Simulated Video",
-                            tint = StudioLightGray.copy(alpha = 0.7f),
-                            modifier = Modifier.size(40.dp)
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = videoName.uppercase(),
-                            color = StudioWhite,
+                            text = "mm",
+                            color = Color(0xFFC8C8D0),
+                            fontSize = 64.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Serif
+                        )
+                        Text(
+                            text = "Office Coach",
+                            color = Color(0xFFA0A0B0),
                             fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold
+                            fontFamily = FontFamily.Serif
                         )
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "PREVIEW STREAMING MODE",
-                            color = StudioLightGray,
-                            fontSize = 8.sp,
-                            fontFamily = FontFamily.Monospace
+                            text = "Willkommen bei Officetrainings.",
+                            color = Color(0xFFE0E0E8),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
             }
 
-            // Overlay Real-time Audio-Video Sync Status Badge
+            // CapCut Subtitle Overlay Box on Video Canvas (WILLKOMMEN BEI OFFICE)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(top = 40.dp)
+                    .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(4.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "WILLKOMMEN BEI",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.5.sp
+                    )
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFFFE600), RoundedCornerShape(2.dp))
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = "OFFICE",
+                            color = Color.Black,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
+
+                // Edit handles on bounding box corners (CapCut style)
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Remove text",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.TopLeft)
+                        .offset(x = (-16).dp, y = (-16).dp)
+                        .size(16.dp)
+                        .background(Color.Black, CircleShape)
+                        .padding(2.dp)
+                )
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit text",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.TopRight)
+                        .offset(x = 16.dp, y = (-16).dp)
+                        .size(16.dp)
+                        .background(Color.Black, CircleShape)
+                        .padding(2.dp)
+                )
+                Icon(
+                    imageVector = Icons.Default.CropFree,
+                    contentDescription = "Resize text",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.BottomRight)
+                        .offset(x = 16.dp, y = 16.dp)
+                        .size(16.dp)
+                        .background(Color.Black, CircleShape)
+                        .padding(2.dp)
+                )
+            }
+
+            // Sync status badge if analyzing/active
             if (syncState != null) {
                 Box(
                     modifier = Modifier
@@ -2958,125 +2912,87 @@ fun VideoPlayerViewport(
                 }
             }
 
-            // Grid coordinate overlays (visible in grid mode)
-            if (playerMode == "grid") {
-                if (capturedX >= 0f && capturedY >= 0f) {
-                    val posX = (capturedX / 100f) * maxWidth.value
-                    val posY = (capturedY / 100f) * maxHeight.value
+            // Grid / Focal selection pin
+            if (capturedX >= 0f && capturedY >= 0f) {
+                val posX = (capturedX / 100f) * maxWidth.value
+                val posY = (capturedY / 100f) * maxHeight.value
 
-                    Box(
-                        modifier = Modifier
-                            .absoluteOffset(
-                                x = (posX.dp - 16.dp),
-                                y = (posY.dp - 16.dp)
-                            )
-                            .size(32.dp)
-                            .border(2.dp, Color(0xFF22C55E), shape = CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(Color(0xFF22C55E), shape = CircleShape)
-                        )
-                    }
-
-                    // Floating stats badge
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(12.dp)
-                            .background(Color.Black.copy(alpha = 0.8f), RoundedCornerShape(6.dp))
-                            .border(1.dp, StudioBorderGray, RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "POINT: X=${capturedX.toInt()}% Y=${capturedY.toInt()}%",
-                                color = Color(0xFF22C55E),
-                                fontSize = 8.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Clear",
-                                tint = StudioWhite,
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .clickable { onClear() }
-                            )
-                        }
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(12.dp)
-                            .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "TAP ANYWHERE TO FOCUS / CROP CENTER",
-                            color = StudioWhite,
-                            fontSize = 8.sp,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    }
+                Box(
+                    modifier = Modifier
+                        .absoluteOffset(x = (posX.dp - 14.dp), y = (posY.dp - 14.dp))
+                        .size(28.dp)
+                        .border(2.dp, Color(0xFF80F3FF), shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(modifier = Modifier.size(6.dp).background(Color(0xFF80F3FF), shape = CircleShape))
                 }
             }
         }
 
-        // Playback Timeline & Control Bar (CapCut style)
-        Column(
+        // CapCut Control Bar directly below Video Monitor Canvas
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(StudioMediumGray)
-                .padding(vertical = 8.dp, horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .background(Color(0xFF14141A))
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Slider (Seek bar)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+            // Left: Fullscreen toggle
+            IconButton(
+                onClick = { /* Fullscreen toggle */ },
+                modifier = Modifier.size(32.dp)
             ) {
-                Text(
-                    text = formatTime(currentPositionMs),
-                    color = StudioWhite,
-                    fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace
-                )
-
-                Slider(
-                    value = currentPositionMs.toFloat(),
-                    onValueChange = {
-                        isDraggingSlider = true
-                        currentPositionMs = it.toInt()
-                        videoViewInstance?.seekTo(it.toInt())
-                    },
-                    onValueChangeFinished = {
-                        isDraggingSlider = false
-                    },
-                    valueRange = 0f..durationMs.toFloat(),
-                    colors = SliderDefaults.colors(
-                        thumbColor = StudioWhite,
-                        activeTrackColor = Color(0xFF22C55E),
-                        inactiveTrackColor = StudioBorderGray
-                    ),
-                    modifier = Modifier.weight(1f)
-                )
-
-                Text(
-                    text = formatTime(durationMs),
-                    color = StudioLightGray,
-                    fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace
+                Icon(
+                    imageVector = Icons.Default.CropFree,
+                    contentDescription = "Fullscreen",
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
                 )
             }
+
+            // Center: Play / Pause Button
+            IconButton(
+                onClick = { isPlaying = !isPlaying },
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(Color(0xFF242430), CircleShape)
+            ) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            // Right: Keyframe, Undo, Redo icons
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AddCircleOutline,
+                    contentDescription = "Keyframe",
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp).clickable { }
+                )
+                Icon(
+                    imageVector = Icons.Default.Undo,
+                    contentDescription = "Undo",
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(18.dp).clickable { }
+                )
+                Icon(
+                    imageVector = Icons.Default.Redo,
+                    contentDescription = "Redo",
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(18.dp).clickable { }
+                )
+            }
+        }
+    }
+}
 
             // Playback buttons
             Row(

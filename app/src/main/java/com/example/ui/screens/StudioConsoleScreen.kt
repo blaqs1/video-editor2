@@ -163,7 +163,7 @@ fun StudioConsoleScreen(
             .fillMaxSize()
             .background(Color(0xFF0C0C10))
     ) {
-        // ZONE 1: TOP APP BAR (WrapContentHeight)
+        // ZONE 1: TOP APP BAR (CapCut Header Bar)
         Box(modifier = Modifier.wrapContentHeight()) {
             Zone1TopBar(
                 project = project,
@@ -176,12 +176,12 @@ fun StudioConsoleScreen(
             )
         }
 
-        // ZONE 2: VIDEO PLAYER & CONTROLS ZONE (weight 0.45f)
+        // ZONE 2: VIDEO PLAYER VIEWPORT ZONE (weight 0.48f)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.45f)
-                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .weight(0.48f)
+                .padding(horizontal = 8.dp, vertical = 2.dp)
         ) {
             Zone2VideoViewport(
                 project = project,
@@ -197,13 +197,12 @@ fun StudioConsoleScreen(
             )
         }
 
-        // ZONE 3: MULTI-TRACK TIMELINE ZONE (weight 0.40f)
+        // ZONE 3: MULTI-TRACK TIMELINE ZONE (weight 0.42f)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.40f)
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .verticalScroll(rememberScrollState())
+                .weight(0.42f)
+                .padding(horizontal = 4.dp, vertical = 2.dp)
         ) {
             TimelineView(
                 project = project,
@@ -215,12 +214,11 @@ fun StudioConsoleScreen(
             )
         }
 
-        // ZONE 4: BOTTOM ACTION TOOLBAR ZONE (weight 0.15f)
+        // ZONE 4: BOTTOM ACTION TOOLBAR ZONE (wrapContentHeight)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.15f)
-                .horizontalScroll(rememberScrollState())
+                .wrapContentHeight()
         ) {
             ToolbarView(
                 viewModel = viewModel,
@@ -262,7 +260,7 @@ fun StudioConsoleScreen(
 }
 
 // ==========================================
-// ZONE 1: TOP BAR COMPOSABLE
+// ZONE 1: TOP BAR COMPOSABLE (CapCut style)
 // ==========================================
 @Composable
 private fun Zone1TopBar(
@@ -277,97 +275,93 @@ private fun Zone1TopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(CapCutDarkSlate)
-            .border(BorderStroke(1.dp, CapCutBorderSlate))
+            .background(Color(0xFF0C0C10))
             .statusBarsPadding()
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        IconButton(
-            onClick = onCloseProject,
-            modifier = Modifier
-                .size(32.dp)
-                .background(Color(0xFF222230), CircleShape)
-                .testTag("zone1_close_btn")
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Close Project",
-                tint = CapCutTextWhite,
-                modifier = Modifier.size(16.dp)
-            )
-        }
-
+        // Left: X Close & Search Icon
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .background(Color(0xFF1B1B26), RoundedCornerShape(20.dp))
-                .border(1.dp, CapCutBorderSlate, RoundedCornerShape(20.dp))
-                .padding(horizontal = 12.dp, vertical = 5.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .background(CapCutBordeauxRed, CircleShape)
-            )
-            Text(
-                text = project.filename,
-                color = CapCutTextWhite,
-                fontSize = 11.5.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 130.dp)
-            )
-            Box(
-                modifier = Modifier
-                    .background(CapCutBordeauxRed.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            IconButton(
+                onClick = onCloseProject,
+                modifier = Modifier.size(28.dp)
             ) {
-                Text(
-                    text = "1080P 30FPS",
-                    color = CapCutTextWhite,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            IconButton(
+                onClick = { },
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
 
-        Button(
-            onClick = onExportClick,
-            enabled = !isExecutingEdit,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = CapCutBordeauxRed,
-                contentColor = CapCutTextWhite
-            ),
-            shape = RoundedCornerShape(10.dp),
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-            modifier = Modifier
-                .height(34.dp)
-                .testTag("zone1_export_btn")
+        // Right: Resolution Dropdown Pill + CapCut Cyan EXPORT Button
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (isExecutingEdit) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(14.dp),
-                    color = CapCutTextWhite,
-                    strokeWidth = 2.dp
+            // Resolution dropdown pill (AI UHD v)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier
+                    .background(Color(0xFF1E1E28), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 10.dp, vertical = 5.dp)
+            ) {
+                Text(
+                    text = "AI UHD",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
                 )
-            } else {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CloudUpload,
-                        contentDescription = "Export",
-                        modifier = Modifier.size(15.dp)
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = "Resolution options",
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            // CapCut Cyan Export Button
+            Button(
+                onClick = onExportClick,
+                enabled = !isExecutingEdit,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF80F3FF),
+                    contentColor = Color.Black
+                ),
+                shape = RoundedCornerShape(14.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                modifier = Modifier
+                    .height(32.dp)
+                    .testTag("zone1_export_btn")
+            ) {
+                if (isExecutingEdit) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(14.dp),
+                        color = Color.Black,
+                        strokeWidth = 2.dp
                     )
+                } else {
                     Text(
-                        text = "EXPORT",
-                        fontSize = 11.sp,
+                        text = "Export",
+                        color = Color.Black,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -392,126 +386,19 @@ private fun Zone2VideoViewport(
     onClearCoordinates: () -> Unit,
     syncState: com.example.ui.viewmodel.AudioVideoSyncState?
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = CapCutDarkSlate),
-        border = BorderStroke(1.dp, CapCutBorderSlate),
-        shape = RoundedCornerShape(16.dp),
+    Box(
         modifier = Modifier
             .fillMaxSize()
+            .clip(RoundedCornerShape(12.dp))
             .testTag("zone2_video_viewport_card")
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(CapCutCharcoal)
-                .pointerInput(Unit) {
-                    detectTapGestures { offset ->
-                        val normX = offset.x / size.width.toFloat()
-                        val normY = offset.y / size.height.toFloat()
-                        onTapCoordinates(normX, normY)
-                    }
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            VideoPlayerViewport(
-                capturedX = capturedX,
-                capturedY = capturedY,
-                videoName = project.filename,
-                syncState = syncState,
-                onTap = onTapCoordinates,
-                onClear = onClearCoordinates
-            )
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(10.dp)
-                    .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = "00:00 / 00:15",
-                    color = CapCutTextWhite,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(10.dp)
-                    .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(8.dp))
-                    .padding(3.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                listOf("16:9", "9:16", "1:1").forEach { ratio ->
-                    val isSel = aspectRatioStr == ratio
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isSel) CapCutBordeauxRed else Color.Transparent)
-                            .clickable { onAspectRatioChange(ratio) }
-                            .padding(horizontal = 6.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = ratio,
-                            color = if (isSel) CapCutTextWhite else CapCutMutedGray,
-                            fontSize = 8.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(CapCutBordeauxRed.copy(alpha = 0.85f))
-                    .clickable { onPlayPauseToggle() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = CapCutTextWhite,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-
-            if (capturedX >= 0f && capturedY >= 0f) {
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(10.dp)
-                        .background(CapCutBordeauxRed, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(Icons.Default.FilterCenterFocus, contentDescription = null, tint = CapCutTextWhite, modifier = Modifier.size(12.dp))
-                    Text(
-                        text = "FOCAL: (%.2f, %.2f)".format(capturedX, capturedY),
-                        color = CapCutTextWhite,
-                        fontSize = 9.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Clear",
-                        tint = CapCutTextWhite,
-                        modifier = Modifier
-                            .size(12.dp)
-                            .clickable { onClearCoordinates() }
-                    )
-                }
-            }
-        }
+        VideoPlayerViewport(
+            capturedX = capturedX,
+            capturedY = capturedY,
+            videoName = project.filename,
+            syncState = syncState,
+            onTap = onTapCoordinates,
+            onClear = onClearCoordinates
+        )
     }
 }
