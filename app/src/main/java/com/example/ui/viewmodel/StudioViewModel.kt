@@ -128,6 +128,24 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
         .map { it?.value ?: "" }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
+    // Real-Time Playback & Timeline State Flows
+    val playbackPositionMs = MutableStateFlow(0)
+    val playbackDurationMs = MutableStateFlow(324000) // 05:24 duration default
+    val isPlaybackPlaying = MutableStateFlow(false)
+
+    fun togglePlayback() {
+        isPlaybackPlaying.value = !isPlaybackPlaying.value
+    }
+
+    fun seekPlaybackPosition(positionMs: Int) {
+        playbackPositionMs.value = positionMs.coerceIn(0, playbackDurationMs.value)
+    }
+
+    fun updatePlaybackProgress(positionMs: Int, durationMs: Int) {
+        playbackPositionMs.value = positionMs
+        if (durationMs > 0) playbackDurationMs.value = durationMs
+    }
+
     val videos: StateFlow<List<VideoEntity>> = repository.allVideos
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

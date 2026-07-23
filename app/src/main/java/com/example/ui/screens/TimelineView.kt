@@ -54,6 +54,29 @@ fun TimelineView(
     val scrollState = rememberScrollState()
     var selectedTrackIndex by remember { mutableIntStateOf(0) }
 
+    val positionMs by viewModel.playbackPositionMs.collectAsState()
+    val durationMs by viewModel.playbackDurationMs.collectAsState()
+    val isPlaying by viewModel.isPlaybackPlaying.collectAsState()
+
+    // Sync timeline scroll state with playback position
+    LaunchedEffect(positionMs, durationMs) {
+        if (durationMs > 0) {
+            val progressPct = positionMs.toFloat() / durationMs.toFloat()
+            val maxScroll = scrollState.maxValue
+            if (maxScroll > 0) {
+                scrollState.scrollTo((progressPct * maxScroll).toInt())
+            }
+        }
+    }
+
+    fun formatMs(ms: Int): String {
+        val totalSecs = ms / 1000
+        val mins = totalSecs / 60
+        val secs = totalSecs % 60
+        val millis = (ms % 1000) / 10
+        return String.format("%02d:%02d.%02d", mins, secs, millis)
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -75,10 +98,10 @@ fun TimelineView(
                 Box(
                     modifier = Modifier
                         .size(6.dp)
-                        .background(CapCutCyan, CircleShape)
+                        .background(if (isPlaying) CapCutRed else CapCutCyan, CircleShape)
                 )
                 Text(
-                    text = "00:00:00 / 05:24",
+                    text = "${formatMs(positionMs)} / ${formatMs(durationMs)}",
                     color = CapCutTextPrimary,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 10.5.sp,
@@ -86,9 +109,12 @@ fun TimelineView(
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                listOf("00:00", "00:01", "00:02", "00:03", "00:04").forEach { tick ->
+                val sec1 = (positionMs / 1000)
+                listOf(sec1, sec1 + 1, sec1 + 2, sec1 + 3, sec1 + 4).forEach { s ->
+                    val m = s / 60
+                    val sc = s % 60
                     Text(
-                        text = tick,
+                        text = String.format("%02d:%02d", m, sc),
                         color = CapCutTextMuted,
                         fontSize = 8.5.sp,
                         fontFamily = FontFamily.Monospace

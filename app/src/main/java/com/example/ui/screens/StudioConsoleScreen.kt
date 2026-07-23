@@ -193,7 +193,10 @@ fun StudioConsoleScreen(
                 capturedX = capturedX,
                 capturedY = capturedY,
                 isPlaying = isPlaying,
-                onPlayPauseToggle = { isPlaying = !isPlaying },
+                onPlayPauseToggle = {
+                    isPlaying = !isPlaying
+                    viewModel.togglePlayback()
+                },
                 onAspectRatioChange = { selectedAspectRatio = it },
                 onTapCoordinates = { x, y -> viewModel.setCoordinates(x, y) },
                 onClearCoordinates = { viewModel.clearCoordinates() },

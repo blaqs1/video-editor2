@@ -66,139 +66,7 @@ fun PromptChatView(
         )
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(CapCutSurfaceGlass, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            .border(1.dp, CapCutBorderSubtle, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            .padding(12.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Chat Header Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(CapCutAiGradient, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = "AI Assistant",
-                        tint = StudioAccentWhite,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        text = "CAPCUT AI DIRECTOR",
-                        color = CapCutTextPrimary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
-                    )
-                    Text(
-                        text = if (isProcessingPrompt) "Generating edit graph..." else "Prompt-driven video execution engine",
-                        color = if (isProcessingPrompt) CapCutCyan else CapCutTextMuted,
-                        fontSize = 9.sp
-                    )
-                }
-            }
-
-            if (chatMessages.isNotEmpty()) {
-                TextButton(
-                    onClick = {
-                        viewModel.selectedVideo.value?.let { video ->
-                            viewModel.clearMessagesForVideo(video.id)
-                        }
-                    },
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text("Clear Chat", color = CapCutTextMuted, fontSize = 10.sp)
-                }
-            }
-        }
-
-        Divider(color = CapCutBorderSubtle, modifier = Modifier.padding(vertical = 4.dp))
-
-        // Message List Area
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-        ) {
-            if (chatMessages.isEmpty()) {
-                // Empty state greeting
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(CapCutPurpleGlow, CircleShape)
-                            .border(1.dp, CapCutPurple.copy(alpha = 0.4f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MovieFilter,
-                            contentDescription = null,
-                            tint = CapCutCyan,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "How would you like to edit this video?",
-                        color = CapCutTextPrimary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Describe your edits in plain English or choose a quick chip below. No manual timeline tweaking required!",
-                        color = CapCutTextSecondary,
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                }
-            } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
-                ) {
-                    items(chatMessages, key = { it.id }) { msg ->
-                        ChatMessageItem(
-                            message = msg,
-                            onRender = { viewModel.renderFromMessage(msg.id, context) }
-                        )
-                    }
-
-                    if (isProcessingPrompt) {
-                        item {
-                            AiTypingIndicatorCard()
-                        }
-                    }
-                }
-            }
-        }
-
+    var isPaletteExpanded by remember { mutableStateOf(false) }
     var selectedEffectCategory by remember { mutableStateOf("TRANSITIONS") }
 
     val transitionsList = remember {
@@ -238,92 +106,254 @@ fun PromptChatView(
         else -> transitionsList
     }
 
-    // Effects & Transitions Palette Drawer
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(CapCutSurfaceGlass, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+            .border(1.dp, CapCutBorderSubtle, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+            .padding(10.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Chat Header Bar
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "EFFECTS & TRANSITIONS PALETTE",
-                color = CapCutTextMuted,
-                fontSize = 8.5.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.8.sp,
-                modifier = Modifier.padding(start = 4.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .background(CapCutAiGradient, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = "AI Assistant",
+                        tint = StudioAccentWhite,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = "CAPCUT AI DIRECTOR",
+                        color = CapCutTextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = "Prompt-driven video engine",
+                        color = CapCutTextMuted,
+                        fontSize = 9.sp
+                    )
+                }
+            }
 
-            // Category Tab Chips
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                listOf("TRANSITIONS", "FILTERS", "MOTION").forEach { cat ->
-                    val isSelected = selectedEffectCategory == cat
+            TextButton(
+                onClick = { viewModel.clearChatMessages() },
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = "Clear Chat",
+                    color = CapCutTextMuted,
+                    fontSize = 10.sp
+                )
+            }
+        }
+
+        // PRIMARY BODY: CHAT CONVERSATION HISTORY (Always Front & Center!)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(vertical = 4.dp)
+        ) {
+            if (chatMessages.isEmpty() && !isProcessingPrompt) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isSelected) CapCutCyan.copy(alpha = 0.2f) else Color.Transparent)
-                            .border(
-                                1.dp,
-                                if (isSelected) CapCutCyan else CapCutBorderSubtle,
-                                RoundedCornerShape(8.dp)
-                            )
-                            .clickable { selectedEffectCategory = cat }
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .size(44.dp)
+                            .background(CapCutCyanGlow, CircleShape)
+                            .border(1.dp, CapCutCyan.copy(alpha = 0.4f), CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = cat,
-                            color = if (isSelected) CapCutCyan else CapCutTextMuted,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = CapCutCyan,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "How would you like to edit your video?",
+                        color = CapCutTextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Describe your edits in plain English or select an effect below!",
+                        color = CapCutTextSecondary,
+                        fontSize = 10.5.sp,
+                        lineHeight = 15.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp)
+                ) {
+                    items(chatMessages, key = { it.id }) { msg ->
+                        ChatMessageItem(
+                            message = msg,
+                            onRender = { viewModel.renderFromMessage(msg.id, context) }
+                        )
+                    }
+
+                    if (isProcessingPrompt) {
+                        item {
+                            AiTypingIndicatorCard()
+                        }
+                    }
+                }
+            }
+        }
+
+        // COLLAPSIBLE EFFECTS & TRANSITIONS PALETTE DRAWER
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(CapCutSurfaceElevated, RoundedCornerShape(14.dp))
+                .border(1.dp, CapCutBorderSubtle, RoundedCornerShape(14.dp))
+                .padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isPaletteExpanded = !isPaletteExpanded },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoFixHigh,
+                        contentDescription = null,
+                        tint = CapCutCyan,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = "EFFECTS & TRANSITIONS",
+                        color = CapCutTextPrimary,
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (isPaletteExpanded) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            listOf("TRANSITIONS", "FILTERS", "MOTION").forEach { cat ->
+                                val isSelected = selectedEffectCategory == cat
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(if (isSelected) CapCutCyan.copy(alpha = 0.25f) else Color.Transparent)
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) CapCutCyan else CapCutBorderSubtle,
+                                            RoundedCornerShape(6.dp)
+                                        )
+                                        .clickable { selectedEffectCategory = cat }
+                                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                                ) {
+                                    Text(
+                                        text = cat,
+                                        color = if (isSelected) CapCutCyan else CapCutTextMuted,
+                                        fontSize = 7.5.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Icon(
+                        imageVector = if (isPaletteExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+                        contentDescription = "Toggle palette",
+                        tint = CapCutCyan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            AnimatedVisibility(visible = isPaletteExpanded) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    activeEffectsList.forEach { (label, promptText) ->
+                        CapCutEffectVideoCard(
+                            label = label,
+                            promptText = promptText,
+                            onSelect = { viewModel.submitEditPrompt(promptText, context) },
+                            onAddToPrompt = {
+                                inputPromptText = if (inputPromptText.isBlank()) promptText else "$inputPromptText and $promptText"
+                            }
                         )
                     }
                 }
             }
         }
 
-        // Horizontally Scrolling CapCut Video Preview Cards
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            activeEffectsList.forEach { (label, promptText) ->
-                CapCutEffectVideoCard(
-                    label = label,
-                    promptText = promptText,
-                    onSelect = { viewModel.submitEditPrompt(promptText, context) },
-                    onAddToPrompt = {
-                        inputPromptText = if (inputPromptText.isBlank()) promptText else "$inputPromptText and $promptText"
-                    }
-                )
-            }
-        }
-    }
+        Spacer(modifier = Modifier.height(6.dp))
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Floating Prompt Input Bar
+        // FLOATING PROMPT INPUT BAR (Multi-line Scrollable Input)
         Surface(
             color = CapCutInputBg,
             border = androidx.compose.foundation.BorderStroke(
                 1.dp,
                 if (inputPromptText.isNotBlank()) CapCutCyanGlow else CapCutBorderSubtle
             ),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(20.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(8.dp, RoundedCornerShape(24.dp))
+                .shadow(6.dp, RoundedCornerShape(20.dp))
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = { /* File attachment callback */ },
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(34.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.AttachFile,
@@ -354,7 +384,9 @@ fun PromptChatView(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("prompt_input_field"),
-                    singleLine = true,
+                    singleLine = false,
+                    maxLines = 4,
+                    minLines = 1,
                     textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.5.sp)
                 )
 
@@ -625,24 +657,49 @@ fun CapCutEffectVideoCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Mini Animated Subject Video Preview Monitor Box
+            // Mini Human Subject Video Preview Thumbnail Box
             Box(
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(42.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(
                         Brush.linearGradient(
-                            listOf(CapCutPurple, CapCutCyan)
+                            when {
+                                label.contains("Cyberpunk", ignoreCase = true) -> listOf(Color(0xFF00D4FF), Color(0xFFFF007F))
+                                label.contains("Glitch", ignoreCase = true) -> listOf(Color(0xFF00F0FF), Color(0xFF000000), Color(0xFFFF003C))
+                                label.contains("Sunset", ignoreCase = true) -> listOf(Color(0xFFFF7E5F), Color(0xFFFEB47B))
+                                label.contains("Vintage", ignoreCase = true) -> listOf(Color(0xFFB8860B), Color(0xFF2F4F4F))
+                                else -> listOf(CapCutPurple, CapCutCyan)
+                            }
                         )
-                    ),
+                    )
+                    .border(1.dp, CapCutCyanGlow, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
+                // Human Subject Silhouette / Face Thumbnail Icon
                 Icon(
-                    imageVector = Icons.Default.PlayCircle,
-                    contentDescription = "Preview Motion",
-                    tint = StudioAccentWhite,
-                    modifier = Modifier.size(20.dp)
+                    imageVector = Icons.Default.Face,
+                    contentDescription = "Human Subject Effect Preview",
+                    tint = StudioAccentWhite.copy(alpha = 0.9f),
+                    modifier = Modifier.size(24.dp)
                 )
+
+                // Motion Play Badge overlay
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(2.dp)
+                        .size(12.dp)
+                        .background(StudioBlack.copy(alpha = 0.7f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = CapCutCyan,
+                        modifier = Modifier.size(8.dp)
+                    )
+                }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {

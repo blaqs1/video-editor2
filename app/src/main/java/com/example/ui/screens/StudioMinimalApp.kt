@@ -2755,7 +2755,7 @@ fun VideoPlayerViewport(
                 .fillMaxWidth()
                 .weight(1f)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF4C1D24)) // Dark bordeaux maroon background like CapCut sample
+                .background(Color.Black) // Pure black CapCut video monitor canvas
                 .pointerInput(playerMode) {
                     detectTapGestures { offset ->
                         val xPct = (offset.x / size.width) * 100f
@@ -2823,7 +2823,7 @@ fun VideoPlayerViewport(
                             fontFamily = FontFamily.Default
                         )
                         Text(
-                            text = "Tap to mark focus points or play video canvas",
+                            text = "Tap screen to mark target focus point",
                             color = CapCutTextMuted,
                             fontSize = 10.sp
                         )
@@ -2831,35 +2831,20 @@ fun VideoPlayerViewport(
                 }
             }
 
-            // Sync status badge if analyzing/active
-            if (syncState != null) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(8.dp)
-                ) {
-                    AudioVideoSyncStatusBadge(
-                        syncState = syncState,
-                        onAutoTrimClick = onAutoTrimClick
-                    )
-                }
-            }
+            // TRANSPARENT TAP OVERLAY (Placed ON TOP of VideoView to catch tap gestures & coordinates!)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures { offset ->
+                            val xPct = (offset.x / size.width) * 100f
+                            val yPct = (offset.y / size.height) * 100f
+                            onTap(xPct, yPct)
+                        }
+                    }
+            )
 
-            // Grid / Focal selection pin
-            if (capturedX >= 0f && capturedY >= 0f) {
-                val posX = (capturedX / 100f) * maxWidth.value
-                val posY = (capturedY / 100f) * maxHeight.value
 
-                Box(
-                    modifier = Modifier
-                        .absoluteOffset(x = (posX.dp - 14.dp), y = (posY.dp - 14.dp))
-                        .size(28.dp)
-                        .border(2.dp, Color(0xFF80F3FF), shape = CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(modifier = Modifier.size(6.dp).background(Color(0xFF80F3FF), shape = CircleShape))
-                }
-            }
         }
 
         // CapCut Control Bar directly below Video Monitor Canvas
