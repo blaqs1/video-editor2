@@ -8,6 +8,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -158,84 +161,87 @@ fun StudioConsoleScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(CapCutCharcoal)
+            .background(Color(0xFF0C0C10))
     ) {
-        // ZONE 1: TOP BAR
-        Zone1TopBar(
-            project = project,
-            isAutosaving = isAutosaving,
-            lastAutosavedTime = lastAutosavedTime,
-            isExecutingEdit = isExecutingEdit,
-            onCloseProject = { viewModel.selectVideo(null) },
-            onTriggerAutosave = { viewModel.triggerManualAutosave() },
-            onExportClick = { viewModel.openExportModal { viewModel.executeEdit(context) } }
-        )
-
-        // MAIN CENTER AREA: ZONE 2 (Video Player) + ZONE 3 (Timeline)
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // ZONE 2: VIDEO PLAYER VIEWPORT
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1.1f)
-            ) {
-                Zone2VideoViewport(
-                    project = project,
-                    aspectRatioStr = selectedAspectRatio,
-                    capturedX = capturedX,
-                    capturedY = capturedY,
-                    isPlaying = isPlaying,
-                    onPlayPauseToggle = { isPlaying = !isPlaying },
-                    onAspectRatioChange = { selectedAspectRatio = it },
-                    onTapCoordinates = { x, y -> viewModel.setCoordinates(x, y) },
-                    onClearCoordinates = { viewModel.clearCoordinates() },
-                    syncState = syncStatusState
-                )
-            }
-
-            // ZONE 3: MULTI-TRACK TIMELINE
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.9f)
-            ) {
-                TimelineView(
-                    project = project,
-                    timelineEvents = timelineEvents,
-                    overlays = overlays,
-                    scripts = scripts,
-                    audioFile = audioFile,
-                    viewModel = viewModel
-                )
-            }
+        // ZONE 1: TOP APP BAR (WrapContentHeight)
+        Box(modifier = Modifier.wrapContentHeight()) {
+            Zone1TopBar(
+                project = project,
+                isAutosaving = isAutosaving,
+                lastAutosavedTime = lastAutosavedTime,
+                isExecutingEdit = isExecutingEdit,
+                onCloseProject = { viewModel.selectVideo(null) },
+                onTriggerAutosave = { viewModel.triggerManualAutosave() },
+                onExportClick = { viewModel.openExportModal { viewModel.executeEdit(context) } }
+            )
         }
 
-        // ZONE 4: BOTTOM ACTION BAR & TOOL DRAWERS
-        ToolbarView(
-            viewModel = viewModel,
-            project = project,
-            overlays = overlays,
-            slides = slides,
-            timelineEvents = timelineEvents,
-            scripts = scripts,
-            audioFile = audioFile,
-            directorPrompt = directorPrompt,
-            generatedCommand = generatedCommand,
-            isGeneratingCommand = isGeneratingCommand,
-            isExecutingEdit = isExecutingEdit,
-            onAddTimelineEvent = { type, name, duration ->
-                selectedAssetForEvent = Pair(type, name)
-                eventStartTime = "0.0"
-                eventEndTime = "$duration"
-                showAddEventDialog = true
-            }
-        )
+        // ZONE 2: VIDEO PLAYER & CONTROLS ZONE (weight 0.45f)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(0.45f)
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+        ) {
+            Zone2VideoViewport(
+                project = project,
+                aspectRatioStr = selectedAspectRatio,
+                capturedX = capturedX,
+                capturedY = capturedY,
+                isPlaying = isPlaying,
+                onPlayPauseToggle = { isPlaying = !isPlaying },
+                onAspectRatioChange = { selectedAspectRatio = it },
+                onTapCoordinates = { x, y -> viewModel.setCoordinates(x, y) },
+                onClearCoordinates = { viewModel.clearCoordinates() },
+                syncState = syncStatusState
+            )
+        }
+
+        // ZONE 3: MULTI-TRACK TIMELINE ZONE (weight 0.40f)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(0.40f)
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            TimelineView(
+                project = project,
+                timelineEvents = timelineEvents,
+                overlays = overlays,
+                scripts = scripts,
+                audioFile = audioFile,
+                viewModel = viewModel
+            )
+        }
+
+        // ZONE 4: BOTTOM ACTION TOOLBAR ZONE (weight 0.15f)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(0.15f)
+                .horizontalScroll(rememberScrollState())
+        ) {
+            ToolbarView(
+                viewModel = viewModel,
+                project = project,
+                overlays = overlays,
+                slides = slides,
+                timelineEvents = timelineEvents,
+                scripts = scripts,
+                audioFile = audioFile,
+                directorPrompt = directorPrompt,
+                generatedCommand = generatedCommand,
+                isGeneratingCommand = isGeneratingCommand,
+                isExecutingEdit = isExecutingEdit,
+                onAddTimelineEvent = { type, name, duration ->
+                    selectedAssetForEvent = Pair(type, name)
+                    eventStartTime = "0.0"
+                    eventEndTime = "$duration"
+                    showAddEventDialog = true
+                }
+            )
+        }
     }
 
     if (showPreviewExportModal) {
