@@ -355,14 +355,14 @@ private fun Zone1TopBar(
                     .padding(horizontal = 10.dp, vertical = 5.dp)
             ) {
                 Text(
-                    text = "4K UHD",
+                    text = "1080p | 23.97fps",
                     color = CapCutTextPrimary,
-                    fontSize = 11.sp,
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = "Resolution options",
+                    contentDescription = "Resolution & FPS options",
                     tint = CapCutTextSecondary,
                     modifier = Modifier.size(16.dp)
                 )

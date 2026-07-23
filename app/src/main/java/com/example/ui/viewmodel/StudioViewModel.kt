@@ -366,9 +366,34 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
 
     // Pre-Render Export Configuration Modal State
     val showExportModal = MutableStateFlow(false)
-    val exportResolution = MutableStateFlow("Original (Fastest)")
-    val exportFps = MutableStateFlow("Original")
+    val exportResolution = MutableStateFlow("1080p")
+    val exportFps = MutableStateFlow("30fps")
+    val detectedFps = MutableStateFlow(30.0f)
+    val detectedResolutionStr = MutableStateFlow("1080p")
     private var pendingExportRunnable: Runnable? = null
+
+    fun extractExactFps(videoFile: File, context: android.content.Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val retriever = android.media.MediaMetadataRetriever()
+                retriever.setDataSource(videoFile.absolutePath)
+                val fpsMeta = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                    retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE)
+                } else null
+                
+                val width = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toFloatOrNull() ?: 1920f
+                val height = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toFloatOrNull() ?: 1080f
+                val parsedFps = fpsMeta?.toFloatOrNull() ?: 30.0f
+                
+                retriever.release()
+                detectedFps.value = parsedFps
+                detectedResolutionStr.value = "${height.toInt()}p"
+                exportFps.value = "${parsedFps.toInt()}fps"
+            } catch (_: Exception) {
+                detectedFps.value = 30.0f
+            }
+        }
+    }
 
     fun openExportModal(onConfirm: Runnable) {
         pendingExportRunnable = onConfirm
