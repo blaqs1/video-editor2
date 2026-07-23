@@ -34,6 +34,7 @@ class StudioRepository(context: Context) {
     private val slideDao = db.slideDao()
     private val timelineEventDao = db.timelineEventDao()
     private val projectSessionDao = db.projectSessionDao()
+    private val chatMessageDao = db.chatMessageDao()
 
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -466,6 +467,24 @@ class StudioRepository(context: Context) {
         }
     }
 
+    suspend fun uploadVideoToLibrary(file: File, customFilename: String = ""): Result<String> = withContext(Dispatchers.IO) {
+        val baseUrl = getBackendUrl()
+        if (baseUrl.isBlank()) {
+            return@withContext Result.failure(Exception("Backend URL is not configured."))
+        }
+        try {
+            val reqFile = file.asRequestBody("video/*".toMediaTypeOrNull())
+            val saveName = if (customFilename.isNotBlank()) customFilename else file.name
+            val filePart = MultipartBody.Part.createFormData("file", saveName, reqFile)
+            val filenameBody = saveName.toRequestBody("text/plain".toMediaTypeOrNull())
+            val responseBody = ColabApiClient.getService(baseUrl).uploadToLibrary(filePart, filenameBody)
+            val result = responseBody.string()
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun insertOverlay(filename: String, displayName: String = "", localPath: String = "") = withContext(Dispatchers.IO) {
         val entity = OverlayEntity(filename = filename, displayName = displayName, localPath = localPath)
         val id = overlayDao.insertOverlay(entity)
@@ -663,6 +682,97 @@ data class ExecuteEditResult(
                 geminiApiKeyHeader = keyToUse.ifBlank { null },
                 geminiApiKeyPart = geminiKeyPart,
                 aiEnginePart = aiEnginePart
+            )
+
+            val contentType = responseBody.contentType()?.toString()?.lowercase() ?: ""
+            val bytes = responseBody.bytes()
+
+            val isVideoResponse = contentType.contains("video") ||
+                    contentType.contains("octet-stream") ||
+                    (bytes.size >= 8 && bytes[4] == 'f'.code.toByte() && bytes[5] == 't'.code.toByte() && bytes[6] == 'y'.code.toByte() && bytes[7] == 'p'.code.toByte())
+
+            if (isVideoResponse) {
+                Result.success(
+                    ExecuteEditResult(
+                        message = "Rendered video received directly from backend response (${bytes.size} bytes).",
+                        videoBytes = bytes
+                    )
+                )
+            } else {
+                val textResponse = String(bytes, Charsets.UTF_8)
+                Result.success(
+                    ExecuteEditResult(
+                        message = textResponse,
+                        videoBytes = null
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==========================================
+    // CHAT MESSAGE PERSISTENCE & PROMPT EDIT API
+    // ==========================================
+    fun getChatMessagesForVideo(videoId: Long): Flow<List<ChatMessageEntity>> = chatMessageDao.getMessagesForVideo(videoId)
+
+    suspend fun insertChatMessage(message: ChatMessageEntity): Long = withContext(Dispatchers.IO) {
+        chatMessageDao.insertMessage(message)
+    }
+
+    suspend fun updateChatMessageStatus(id: Long, status: String, msg: String = "") = withContext(Dispatchers.IO) {
+        chatMessageDao.updateMessageStatus(id, status, msg)
+    }
+
+    suspend fun updateChatMessageCommand(id: Long, cmd: String, status: String) = withContext(Dispatchers.IO) {
+        chatMessageDao.updateMessageCommand(id, cmd, status)
+    }
+
+    suspend fun deleteChatMessage(id: Long) = withContext(Dispatchers.IO) {
+        chatMessageDao.deleteMessage(id)
+    }
+
+    suspend fun clearMessagesForVideo(videoId: Long) = withContext(Dispatchers.IO) {
+        chatMessageDao.clearMessagesForVideo(videoId)
+    }
+
+    suspend fun submitPromptEdit(
+        filename: String,
+        prompt: String,
+        audioFile: File? = null,
+        introFile: File? = null,
+        geminiApiKey: String? = null
+    ): Result<ExecuteEditResult> = withContext(Dispatchers.IO) {
+        val baseUrl = getBackendUrl()
+        if (baseUrl.isBlank()) {
+            return@withContext Result.failure(Exception("Backend URL is not configured."))
+        }
+
+        try {
+            val filenameBody = filename.toRequestBody("text/plain".toMediaTypeOrNull())
+            val promptBody = prompt.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val keyToUse = if (!geminiApiKey.isNullOrBlank()) geminiApiKey else BuildConfig.GEMINI_API_KEY
+            val geminiKeyPart = keyToUse.takeIf { it.isNotBlank() }?.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val audioPart = audioFile?.let {
+                val reqFile = it.asRequestBody("audio/*".toMediaTypeOrNull())
+                MultipartBody.Part.createFormData("audio", it.name, reqFile)
+            }
+
+            val introPart = introFile?.let {
+                val reqFile = it.asRequestBody("video/*".toMediaTypeOrNull())
+                MultipartBody.Part.createFormData("intro", it.name, reqFile)
+            }
+
+            val responseBody = ColabApiClient.getService(baseUrl).promptEdit(
+                filename = filenameBody,
+                prompt = promptBody,
+                audio = audioPart,
+                intro = introPart,
+                geminiApiKeyHeader = keyToUse.ifBlank { null },
+                geminiApiKeyPart = geminiKeyPart
             )
 
             val contentType = responseBody.contentType()?.toString()?.lowercase() ?: ""

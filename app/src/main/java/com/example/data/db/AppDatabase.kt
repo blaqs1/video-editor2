@@ -204,7 +204,40 @@ interface ProjectSessionDao {
     suspend fun clearAllSessions()
 }
 
-@Database(entities = [VideoEntity::class, ScriptEntity::class, ConfigEntity::class, OverlayEntity::class, SlideEntity::class, TimelineEventEntity::class, ProjectSessionEntity::class], version = 6, exportSchema = false)
+@Entity(tableName = "chat_messages")
+data class ChatMessageEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val videoId: Long,
+    val role: String,              // "user" | "assistant" | "system"
+    val content: String,           // Display text
+    val ffmpegCommand: String = "", // Generated command (assistant only)
+    val status: String = "pending", // "pending" | "generating" | "ready" | "rendering" | "rendered" | "error"
+    val renderResultMsg: String = "",
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+@Dao
+interface ChatMessageDao {
+    @Query("SELECT * FROM chat_messages WHERE videoId = :videoId ORDER BY timestamp ASC")
+    fun getMessagesForVideo(videoId: Long): Flow<List<ChatMessageEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMessage(message: ChatMessageEntity): Long
+
+    @Query("UPDATE chat_messages SET status = :status, renderResultMsg = :msg WHERE id = :id")
+    suspend fun updateMessageStatus(id: Long, status: String, msg: String = "")
+
+    @Query("UPDATE chat_messages SET ffmpegCommand = :cmd, status = :status WHERE id = :id")
+    suspend fun updateMessageCommand(id: Long, cmd: String, status: String)
+
+    @Query("DELETE FROM chat_messages WHERE id = :id")
+    suspend fun deleteMessage(id: Long)
+
+    @Query("DELETE FROM chat_messages WHERE videoId = :videoId")
+    suspend fun clearMessagesForVideo(videoId: Long)
+}
+
+@Database(entities = [VideoEntity::class, ScriptEntity::class, ConfigEntity::class, OverlayEntity::class, SlideEntity::class, TimelineEventEntity::class, ProjectSessionEntity::class, ChatMessageEntity::class], version = 7, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun videoDao(): VideoDao
     abstract fun scriptDao(): ScriptDao
@@ -213,6 +246,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun slideDao(): SlideDao
     abstract fun timelineEventDao(): TimelineEventDao
     abstract fun projectSessionDao(): ProjectSessionDao
+    abstract fun chatMessageDao(): ChatMessageDao
 
     companion object {
         @Volatile

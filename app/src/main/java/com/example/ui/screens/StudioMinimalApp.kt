@@ -2692,8 +2692,6 @@ fun AudioVideoSyncStatusBadge(
 
 // Custom Viewport for Interactive Coordinates Mapping and Video Playback (CapCut Style)
 @Composable
-// Custom Viewport for Interactive Coordinates Mapping and Video Playback (CapCut Style)
-@Composable
 fun VideoPlayerViewport(
     capturedX: Float,
     capturedY: Float,
@@ -2788,114 +2786,49 @@ fun VideoPlayerViewport(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                // Simulated High Quality CapCut Video Monitor Screen (Office Coach Brand Canvas)
+                // High Quality CapCut Video Monitor Screen
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(Color(0xFF5A1C20), Color(0xFF381014))
+                                colors = listOf(CapCutSurfaceElevated, CapCutSurface)
                             )
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(CapCutCyanGlow, CircleShape)
+                                .border(1.dp, CapCutCyan.copy(alpha = 0.5f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Play preview",
+                                tint = CapCutCyan,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
                         Text(
-                            text = "mm",
-                            color = Color(0xFFC8C8D0),
-                            fontSize = 64.sp,
+                            text = videoName,
+                            color = CapCutTextPrimary,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Serif
+                            fontFamily = FontFamily.Default
                         )
                         Text(
-                            text = "Office Coach",
-                            color = Color(0xFFA0A0B0),
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Serif
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "Willkommen bei Officetrainings.",
-                            color = Color(0xFFE0E0E8),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
+                            text = "Tap to mark focus points or play video canvas",
+                            color = CapCutTextMuted,
+                            fontSize = 10.sp
                         )
                     }
                 }
-            }
-
-            // CapCut Subtitle Overlay Box on Video Canvas (WILLKOMMEN BEI OFFICE)
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(top = 40.dp)
-                    .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(4.dp))
-                    .border(1.dp, Color.White.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = "WILLKOMMEN BEI",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.5.sp
-                    )
-                    Box(
-                        modifier = Modifier
-                            .background(Color(0xFFFFE600), RoundedCornerShape(2.dp))
-                            .padding(horizontal = 4.dp, vertical = 1.dp)
-                    ) {
-                        Text(
-                            text = "OFFICE",
-                            color = Color.Black,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-                }
-
-                // Edit handles on bounding box corners (CapCut style)
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Remove text",
-                    tint = Color.White,
-                    modifier = Modifier
-                        .align(Alignment.TopLeft)
-                        .offset(x = (-16).dp, y = (-16).dp)
-                        .size(16.dp)
-                        .background(Color.Black, CircleShape)
-                        .padding(2.dp)
-                )
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit text",
-                    tint = Color.White,
-                    modifier = Modifier
-                        .align(Alignment.TopRight)
-                        .offset(x = 16.dp, y = (-16).dp)
-                        .size(16.dp)
-                        .background(Color.Black, CircleShape)
-                        .padding(2.dp)
-                )
-                Icon(
-                    imageVector = Icons.Default.CropFree,
-                    contentDescription = "Resize text",
-                    tint = Color.White,
-                    modifier = Modifier
-                        .align(Alignment.BottomRight)
-                        .offset(x = 16.dp, y = 16.dp)
-                        .size(16.dp)
-                        .background(Color.Black, CircleShape)
-                        .padding(2.dp)
-                )
             }
 
             // Sync status badge if analyzing/active
@@ -2989,110 +2922,6 @@ fun VideoPlayerViewport(
                     tint = Color.White.copy(alpha = 0.8f),
                     modifier = Modifier.size(18.dp).clickable { }
                 )
-            }
-        }
-    }
-}
-
-            // Playback buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Info readout
-                Text(
-                    text = if (fileExists) "REAL VIDEO SYNCED" else "STREAMING DESIGN",
-                    fontSize = 8.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = if (fileExists) Color(0xFF22C55E) else StudioLightGray,
-                    fontWeight = FontWeight.Bold
-                )
-
-                // Play / Pause in the center
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = {
-                            if (fileExists) {
-                                videoViewInstance?.seekTo(0)
-                            }
-                            currentPositionMs = 0
-                        },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.Replay, contentDescription = "Replay", tint = StudioWhite, modifier = Modifier.size(16.dp))
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(StudioWhite, CircleShape)
-                            .clickable { isPlaying = !isPlaying },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (isPlaying) "Pause" else "Play",
-                            tint = StudioBlack,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            isMuted = !isMuted
-                            videoViewInstance?.let { view ->
-                                // Note: standard MediaPlayer inside VideoView has volume control on preparado
-                            }
-                        },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                            contentDescription = "Mute",
-                            tint = StudioWhite,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-
-                // File indicator or options
-                Text(
-                    text = when (playerMode) {
-                        "grid" -> "GRID ACTIVE"
-                        "trim" -> "TRIM ACTIVE"
-                        else -> "PLAYBACK MODE"
-                    },
-                    fontSize = 8.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = if (playerMode == "trim") Color(0xFF10B981) else StudioLightGray,
-                    fontWeight = if (playerMode == "trim") FontWeight.Bold else FontWeight.Normal
-                )
-            }
-
-            if (playerMode == "trim") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                ) {
-                    VideoTrimRangeSlider(
-                        startValue = trimStartSec,
-                        endValue = trimEndSec,
-                        durationMax = (durationMs / 1000f).coerceAtLeast(10f),
-                        onRangeChange = { start, end ->
-                            trimStartSec = start
-                            trimEndSec = end
-                            val startMs = (start * 1000).toInt()
-                            currentPositionMs = startMs
-                            videoViewInstance?.seekTo(startMs)
-                        },
-                        label = "TRIM ACTIVE VIDEO CLIP"
-                    )
-                }
             }
         }
     }
@@ -3496,14 +3325,16 @@ fun ProjectHubScreen(
                             val uri = selectedVideoUri
                             val trimmed = projectNameInput.trim()
                             val finalName = if (trimmed.contains(".")) trimmed else "$trimmed.mp4"
-                            if (uri != null) {
+                            val cachedFile = if (uri != null) {
                                 copyUriToCache(context, uri, finalName)
-                            }
+                            } else null
+
                             viewModel.addLocalVideo(
                                 filename = projectNameInput,
                                 language = projectLanguageInput,
                                 autoSelect = true,
-                                localUri = uri?.toString() ?: ""
+                                localUri = uri?.toString() ?: "",
+                                fileToUpload = cachedFile
                             )
                             showCreateDialog = false
                             projectNameInput = ""
@@ -3540,46 +3371,59 @@ fun ProjectHubScreen(
         // App Branding / Header
         item {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(CapCutCyanGradient, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MovieFilter,
+                            contentDescription = "Logo",
+                            tint = StudioBlack,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Text(
+                        text = "CAPCUT AI STUDIO",
+                        fontFamily = FontFamily.Default,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 22.sp,
+                        letterSpacing = 1.sp,
+                        color = CapCutTextPrimary
+                    )
+                }
                 Text(
-                    text = "STUDIO MINIMAL",
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
-                    letterSpacing = 4.sp,
-                    color = StudioWhite
-                )
-                Text(
-                    text = "CapCut-Style AI Editing Console",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
-                    color = StudioLightGray,
-                    letterSpacing = 1.sp,
+                    text = "Prompt-Driven Multimodal Video Director",
+                    fontFamily = FontFamily.Default,
+                    fontSize = 11.sp,
+                    color = CapCutTextSecondary,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
         }
 
-        // "+ NEW PROJECT" Giant Touch Button
+        // "+ NEW PROJECT" Giant Touch Card with CapCut Cyan Accent
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(130.dp)
-                    .background(
-                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                            colors = listOf(StudioDarkGray, StudioMediumGray)
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    )
+                    .height(136.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(CapCutSurfaceElevated)
                     .border(
                         width = 1.dp,
-                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                            colors = listOf(StudioBorderGray, Color.White.copy(alpha = 0.2f))
-                        ),
-                        shape = RoundedCornerShape(16.dp)
+                        brush = CapCutCyanGradient,
+                        shape = RoundedCornerShape(20.dp)
                     )
                     .clickable { videoPickerLauncher.launch("video/*") }
                     .testTag("new_project_card_button"),
@@ -3591,30 +3435,29 @@ fun ProjectHubScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
-                            .background(StudioWhite, CircleShape),
+                            .size(48.dp)
+                            .background(CapCutCyanGradient, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "New Project",
                             tint = StudioBlack,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(26.dp)
                         )
                     }
                     Text(
-                        text = "START NEW PROJECT",
-                        color = StudioWhite,
-                        fontFamily = FontFamily.Monospace,
+                        text = "START NEW AI EDIT PROJECT",
+                        color = CapCutTextPrimary,
+                        fontFamily = FontFamily.Default,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        letterSpacing = 1.5.sp
+                        fontSize = 13.sp,
+                        letterSpacing = 0.5.sp
                     )
                     Text(
-                        text = "Add videos, audio, translate, and compile with Gemini AI",
-                        color = StudioLightGray,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 9.sp
+                        text = "Import video & edit instantly with text prompts",
+                        color = CapCutTextSecondary,
+                        fontSize = 10.sp
                     )
                 }
             }

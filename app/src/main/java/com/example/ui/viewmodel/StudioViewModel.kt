@@ -10,6 +10,7 @@ import com.example.data.db.OverlayEntity
 import com.example.data.db.SlideEntity
 import com.example.data.db.TimelineEventEntity
 import com.example.data.db.ProjectSessionEntity
+import com.example.data.db.ChatMessageEntity
 import com.example.data.repository.StudioRepository
 import com.example.service.RenderNotificationHelper
 import kotlinx.coroutines.Dispatchers
@@ -177,6 +178,166 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // CapCut AI Prompt Chat & Mode State
+    val editorMode = MutableStateFlow("prompt") // "prompt" | "manual"
+    val currentPromptInput = MutableStateFlow("")
+    val isProcessingPrompt = MutableStateFlow(false)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val chatMessages: StateFlow<List<ChatMessageEntity>> = selectedVideo
+        .flatMapLatest { video ->
+            if (video != null) {
+                repository.getChatMessagesForVideo(video.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun toggleEditorMode() {
+        editorMode.value = if (editorMode.value == "prompt") "manual" else "prompt"
+    }
+
+    fun submitEditPrompt(promptText: String, context: android.content.Context? = null) {
+        val video = selectedVideo.value ?: run {
+            errorMessage.value = "Please select a target video first."
+            return
+        }
+        val text = promptText.trim()
+        if (text.isBlank()) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            isProcessingPrompt.value = true
+            currentPromptInput.value = ""
+
+            // 1. Insert user message
+            val userMsg = ChatMessageEntity(
+                videoId = video.id,
+                role = "user",
+                content = text,
+                status = "sent"
+            )
+            repository.insertChatMessage(userMsg)
+
+            // 2. Insert placeholder assistant message
+            val assistantMsg = ChatMessageEntity(
+                videoId = video.id,
+                role = "assistant",
+                content = "Applying '$text' to your video...",
+                status = "rendering"
+            )
+            val assistantMsgId = repository.insertChatMessage(assistantMsg)
+
+            // Check for conversational capability / help questions
+            val helpKeywords = listOf("what can you do", "what do you do", "help", "feature", "how to use", "capability", "capabilities", "what can i do", "who are you")
+            val lowerText = text.lowercase()
+            if (helpKeywords.any { lowerText.contains(it) }) {
+                isProcessingPrompt.value = false
+                val helpResponse = """
+                    👋 Hi! I'm your CapCut AI Director. Here is what I can do to edit your video:
+
+                    📝 Auto Karaoke Captions — Burn word-highlighted subtitles directly from speech
+                    ✂️ Silence Auto-Trim — Remove dead air, pauses & awkward gaps
+                    ⚡ Speed Ramping — Speed up 1.5x / 2x with pitch-safe voice
+                    🎬 B-Roll & Overlay Assets — Add logos, Bordeaux text slides or graphics
+                    🎨 Color Grading — Apply Black & White, Sepia, or Saturation filters
+                    📱 Aspect Ratio Crop — Convert to 9:16 vertical for TikTok & Reels
+
+                    Try tapping one of the quick action chips below or describe your edit!
+                """.trimIndent()
+
+                repository.updateChatMessageStatus(
+                    id = assistantMsgId,
+                    status = "rendered",
+                    msg = helpResponse
+                )
+                return@launch
+            }
+
+            // 3. Immediately execute prompt edit on Modal serverless GPU engine
+            val editResult = repository.submitPromptEdit(
+                filename = video.filename,
+                prompt = text,
+                audioFile = audioFile.value,
+                introFile = introFile.value,
+                geminiApiKey = com.example.BuildConfig.GEMINI_API_KEY
+            )
+
+            isProcessingPrompt.value = false
+
+            editResult.onSuccess { result ->
+                val projName = video.displayName.ifBlank { video.filename }
+                // Store intermediate edit in app cache directory for instant player preview (NOT gallery)
+                if (result.videoBytes != null && context != null) {
+                    val cacheFile = java.io.File(context.cacheDir, "preview_${video.filename}")
+                    cacheFile.writeBytes(result.videoBytes)
+                }
+
+                // Proactive follow-up suggestions tailored to what was done
+                val followUpSuggestions = when {
+                    text.contains("caption", ignoreCase = true) -> 
+                        "✨ Captions applied! Next, would you like to:\n• Add background audio track\n• Auto-trim dead pauses\n• Crop to 9:16 portrait ratio"
+                    text.contains("trim", ignoreCase = true) or text.contains("cut", ignoreCase = true) -> 
+                        "✨ Silences trimmed! Next, would you like to:\n• Add karaoke captions\n• Speed up 1.5x\n• Apply black & white filter"
+                    text.contains("speed", ignoreCase = true) -> 
+                        "✨ Speed adjusted! Next, would you like to:\n• Add captions to match new tempo\n• Overlay logo graphic"
+                    else -> 
+                        "✨ Edit applied! Next, would you like to:\n• Add karaoke captions\n• Auto-trim dead pauses\n• Add background audio"
+                }
+
+                repository.updateChatMessageStatus(
+                    id = assistantMsgId,
+                    status = "rendered",
+                    msg = followUpSuggestions
+                )
+                successMessage.value = "Edit applied to project preview!"
+            }.onFailure { err ->
+                repository.updateChatMessageStatus(
+                    id = assistantMsgId,
+                    status = "error",
+                    msg = err.localizedMessage ?: "Could not apply requested edit."
+                )
+                errorMessage.value = "Edit Error: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun renderFromMessage(messageId: Long, context: android.content.Context? = null) {
+        val video = selectedVideo.value ?: return
+        val targetMsg = chatMessages.value.find { it.id == messageId } ?: return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            isExecutingEdit.value = true
+            repository.updateChatMessageStatus(messageId, "rendering", "Applying edit to your video...")
+
+            context?.let { RenderNotificationHelper.showRenderingNotification(it, exportResolution.value) }
+
+            val result = repository.executeEdit(
+                filename = video.filename,
+                command = targetMsg.ffmpegCommand.ifBlank { targetMsg.content },
+                audioFile = audioFile.value,
+                introFile = introFile.value,
+                geminiApiKey = com.example.BuildConfig.GEMINI_API_KEY,
+                aiEngine = selectedAiEngine.value
+            )
+
+            result.onSuccess { res ->
+                isExecutingEdit.value = false
+                if (context != null) {
+                    val cacheFile = java.io.File(context.cacheDir, "preview_${video.filename}")
+                    cacheFile.writeBytes(res.videoBytes)
+                }
+
+                repository.updateChatMessageStatus(messageId, "rendered", "✨ Edit applied to your project preview!")
+                successMessage.value = "Edit applied to project preview!"
+            }.onFailure { err ->
+                isExecutingEdit.value = false
+                repository.updateChatMessageStatus(messageId, "error", err.localizedMessage ?: "Could not apply edit.")
+                errorMessage.value = "Edit error: ${err.localizedMessage}"
+            }
+        }
+    }
 
     // Loading states
     val isSyncing = MutableStateFlow(false)
@@ -421,17 +582,34 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun addLocalVideo(filename: String, displayName: String = "", language: String = "en", autoSelect: Boolean = false, localUri: String = "") {
+    fun addLocalVideo(filename: String, displayName: String = "", language: String = "en", autoSelect: Boolean = false, localUri: String = "", fileToUpload: File? = null) {
         viewModelScope.launch {
             val trimmed = filename.trim()
             val finalName = if (trimmed.contains(".")) trimmed else "$trimmed.mp4"
-            val id = repository.insertLocalVideo(finalName, displayName = displayName, language = language, status = "idle", localUri = localUri)
-            val newVideo = VideoEntity(id = id, filename = finalName, displayName = displayName, language = language, status = "idle", localUri = localUri)
+            val initialStatus = if (fileToUpload != null || localUri.isNotBlank()) "Syncing" else "idle"
+            
+            val id = repository.insertLocalVideo(finalName, displayName = displayName, language = language, status = initialStatus, localUri = localUri)
+            val newVideo = VideoEntity(id = id, filename = finalName, displayName = displayName, language = language, status = initialStatus, localUri = localUri)
+            
             if (autoSelect) {
                 selectVideo(newVideo)
-                successMessage.value = "Project '$trimmed' created and opened!"
+                successMessage.value = "Project '$trimmed' created! Uploading to Modal cloud..."
             } else {
                 successMessage.value = "Video added to library."
+            }
+
+            // Automatic background cloud sync to Modal volume /drive/library
+            if (fileToUpload != null && fileToUpload.exists()) {
+                viewModelScope.launch(Dispatchers.IO) {
+                    repository.uploadVideoToLibrary(fileToUpload, customFilename = finalName)
+                        .onSuccess {
+                            repository.updateVideoStatusByFilename(finalName, "ready")
+                        }
+                        .onFailure {
+                            Log.e("StudioViewModel", "Background video upload warning: ${it.message}")
+                            repository.updateVideoStatusByFilename(finalName, "idle")
+                        }
+                }
             }
         }
     }

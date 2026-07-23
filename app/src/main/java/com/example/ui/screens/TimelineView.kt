@@ -57,105 +57,99 @@ fun TimelineView(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0C0C10))
-            .padding(vertical = 4.dp, horizontal = 6.dp)
+            .background(CapCutBackground)
+            .padding(vertical = 2.dp, horizontal = 4.dp)
     ) {
-        // Timeline Header: Timecode (00:00 / 05:24) & Ruler
+        // Timeline Header: Timecode & Ruler Ticks
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "00:00 / 05:24",
-                color = Color.White,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(CapCutCyan, CircleShape)
+                )
+                Text(
+                    text = "00:00:00 / 05:24",
+                    color = CapCutTextPrimary,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 listOf("00:00", "00:01", "00:02", "00:03", "00:04").forEach { tick ->
                     Text(
                         text = tick,
-                        color = Color(0xFFA0A0B0),
-                        fontSize = 9.sp,
+                        color = CapCutTextMuted,
+                        fontSize = 8.5.sp,
                         fontFamily = FontFamily.Monospace
                     )
                 }
             }
         }
 
-        // Multi-Track Viewport with Left Quick Tools & Stationary Center White Playhead Line
+        // Multi-Track Viewport with Stationary Center White Playhead Line
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .background(Color(0xFF14141A))
+                .background(CapCutSurface)
+                .border(1.dp, CapCutBorderSubtle, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp))
         ) {
             Row(modifier = Modifier.fillMaxSize()) {
-                // Left Quick Actions Column (CapCut style: AI clipper, Cover, Captions status)
+                // Left Quick Actions Column
                 Column(
                     modifier = Modifier
-                        .width(96.dp)
+                        .width(70.dp)
                         .fillMaxHeight()
-                        .background(Color(0xFF101014))
-                        .padding(horizontal = 6.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .background(CapCutSurfaceElevated)
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    // AI Clipper button
-                    Surface(
-                        color = Color(0xFF1E222A),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .clickable { }
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Default.ContentCut, contentDescription = "AI clipper", tint = Color(0xFF80F3FF), modifier = Modifier.size(16.dp))
-                            Text("AI clipper", color = Color.White, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-
-                    // Cover selector button
-                    Surface(
-                        color = Color(0xFF1E222A),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .clickable { }
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Default.Edit, contentDescription = "Cover", tint = Color.White, modifier = Modifier.size(16.dp))
-                            Text("Cover", color = Color.White, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Floating captions status tag (h captions 98% >)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFF1E3840), RoundedCornerShape(12.dp))
-                            .border(1.dp, Color(0xFF80F3FF).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                            .weight(1f)
+                            .background(CapCutInputBg, RoundedCornerShape(6.dp)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF80F3FF), modifier = Modifier.size(10.dp))
-                            Text("h captions 98% >", color = Color.White, fontSize = 7.5.sp, fontWeight = FontWeight.Bold)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Movie, contentDescription = "Video", tint = CapCutCyan, modifier = Modifier.size(12.dp))
+                            Text("Main", color = CapCutTextSecondary, fontSize = 7.5.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .background(CapCutInputBg, RoundedCornerShape(6.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Subtitles, contentDescription = "Captions", tint = CapCutAmber, modifier = Modifier.size(12.dp))
+                            Text("Captions", color = CapCutTextSecondary, fontSize = 7.5.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .background(CapCutInputBg, RoundedCornerShape(6.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.GraphicEq, contentDescription = "Audio", tint = CapCutPurple, modifier = Modifier.size(12.dp))
+                            Text("Audio", color = CapCutTextSecondary, fontSize = 7.5.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -171,53 +165,60 @@ fun TimelineView(
                             .fillMaxSize()
                             .horizontalScroll(scrollState)
                     ) {
-                        Spacer(modifier = Modifier.width(100.dp))
+                        Spacer(modifier = Modifier.width(60.dp))
 
                         Column(
                             modifier = Modifier
                                 .width(900.dp)
                                 .fillMaxHeight()
                                 .padding(vertical = 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            // Track 1: Main Video Track (with thumbnail strip & + button)
+                            // Track 1: Main Video Track
                             MainVideoTrackCapCut(
                                 project = project,
                                 isSelected = selectedTrackIndex == 0,
                                 onClick = { selectedTrackIndex = 0 }
                             )
 
-                            // Track 2: Primary Captions / Subtitles Track (Yellow CapCut Chips)
+                            // Track 2: Captions Track
                             CaptionsTrackCapCut(
-                                title = "willkommen",
-                                subtitle = "machen wir dein...",
+                                title = "willkommen bei Office",
+                                subtitle = "smart AI captions enabled",
                                 isSelected = selectedTrackIndex == 1,
                                 onClick = { selectedTrackIndex = 1 }
                             )
 
-                            // Track 3: Secondary Translation Subtitles Track (Yellow CapCut Chips)
-                            CaptionsTrackCapCut(
-                                title = "welcome to Office",
-                                subtitle = "we make your workin...",
+                            // Track 3: Audio Waveform Track
+                            AudioWaveformTrack(
+                                audioFile = audioFile,
                                 isSelected = selectedTrackIndex == 2,
                                 onClick = { selectedTrackIndex = 2 }
                             )
-
-                            // Track 4: Audio Waveform Track
-                            AudioWaveformTrack(
-                                audioFile = audioFile,
-                                isSelected = selectedTrackIndex == 3,
-                                onClick = { selectedTrackIndex = 3 }
-                            )
                         }
 
-                        Spacer(modifier = Modifier.width(100.dp))
+                        Spacer(modifier = Modifier.width(60.dp))
                     }
 
                     // STATIONARY CENTER WHITE PLAYHEAD NEEDLE LINE
                     Canvas(
                         modifier = Modifier
                             .fillMaxHeight()
+                            .width(2.dp)
+                            .align(Alignment.Center)
+                    ) {
+                        drawLine(
+                            color = Color.White,
+                            start = Offset(size.width / 2, 0f),
+                            end = Offset(size.width / 2, size.height),
+                            strokeWidth = 2.dp.toPx()
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
                             .width(2.dp)
                             .align(Alignment.Center)
                     ) {
@@ -328,7 +329,7 @@ private fun CaptionsTrackCapCut(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(Icons.Default.Subtitles, contentDescription = null, tint = Color.Black, modifier = Modifier.size(12.dp))
+                    Icon(Icons.Default.ClosedCaption, contentDescription = null, tint = Color.Black, modifier = Modifier.size(12.dp))
                     Text(
                         text = title,
                         color = Color.Black,
@@ -353,7 +354,7 @@ private fun CaptionsTrackCapCut(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(Icons.Default.Subtitles, contentDescription = null, tint = Color.Black, modifier = Modifier.size(12.dp))
+                    Icon(Icons.Default.ClosedCaption, contentDescription = null, tint = Color.Black, modifier = Modifier.size(12.dp))
                     Text(
                         text = subtitle,
                         color = Color.Black,

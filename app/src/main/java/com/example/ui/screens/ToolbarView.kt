@@ -74,7 +74,7 @@ fun ToolbarView(
     var activeSheetTool by remember { mutableStateOf<String?>(null) }
     
     val tools = listOf(
-        ActionTool("back", "", Icons.Default.ChevronLeft, "tool_btn_back"),
+        ActionTool("back", "", Icons.Default.ArrowBack, "tool_btn_back"),
         ActionTool("edit", "Split", Icons.Default.ContentCut, "tool_btn_edit"),
         ActionTool("text", "Style", Icons.Default.Title, "tool_btn_text"),
         ActionTool("captions", "Edit captions", Icons.Default.Edit, "tool_btn_captions"),
@@ -641,16 +641,16 @@ private fun CaptionsToolDrawerContent(
 
         Button(
             onClick = {
-                viewModel.translateScript()
+                viewModel.submitEditPrompt("Add karaoke captions with yellow word highlighting")
                 onDismiss()
             },
-            colors = ButtonDefaults.buttonColors(containerColor = CapCutBordeauxRed),
+            colors = ButtonDefaults.buttonColors(containerColor = CapCutCyan, contentColor = StudioBlack),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth().testTag("drawer_captions_auto_gen")
         ) {
-            Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = StudioBlack, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("GENERATE AUTO CAPTIONS FROM AUDIO", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("GENERATE AUTO CAPTIONS FROM AUDIO", color = StudioBlack, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
 
         Text(

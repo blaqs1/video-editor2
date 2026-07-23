@@ -37,6 +37,17 @@ interface ColabApiService {
         @Part file: MultipartBody.Part,
         @Part("filename") filename: RequestBody? = null
     ): ResponseBody
+
+    @Multipart
+    @POST("prompt-edit")
+    suspend fun promptEdit(
+        @Part("filename") filename: RequestBody,
+        @Part("prompt") prompt: RequestBody,
+        @Part audio: MultipartBody.Part?,
+        @Part intro: MultipartBody.Part?,
+        @Header("X-Gemini-API-Key") geminiApiKeyHeader: String? = null,
+        @Part("gemini_api_key") geminiApiKeyPart: RequestBody? = null
+    ): ResponseBody
 }
 
 object ColabApiClient {

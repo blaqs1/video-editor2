@@ -77,6 +77,10 @@ fun StudioConsoleScreen(
     val saveVideoProgress by viewModel.saveVideoProgress.collectAsStateWithLifecycle()
     val saveVideoStatusStep by viewModel.saveVideoStatusStep.collectAsStateWithLifecycle()
 
+    val editorMode by viewModel.editorMode.collectAsStateWithLifecycle()
+    val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
+    val isProcessingPrompt by viewModel.isProcessingPrompt.collectAsStateWithLifecycle()
+
     var showPreviewExportModal by remember { mutableStateOf(false) }
     var selectedAspectRatio by remember { mutableStateOf("16:9") }
     var isPlaying by remember { mutableStateOf(false) }
@@ -97,14 +101,14 @@ fun StudioConsoleScreen(
     if (showAddEventDialog && selectedAssetForEvent != null) {
         AlertDialog(
             onDismissRequest = { showAddEventDialog = false },
-            containerColor = Color(0xFF16161E),
+            containerColor = CapCutSurface,
             title = {
                 Text(
                     text = "ADD LAYER TO TIMELINE",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
-                    color = Color(0xFFF0F0F5)
+                    color = CapCutTextPrimary
                 )
             },
             text = {
@@ -114,7 +118,7 @@ fun StudioConsoleScreen(
                 ) {
                     Text(
                         text = "Asset: ${selectedAssetForEvent?.second}\nType: ${selectedAssetForEvent?.first?.uppercase()}",
-                        color = Color(0xFFA0A0B0),
+                        color = CapCutTextSecondary,
                         fontSize = 11.sp
                     )
 
@@ -143,7 +147,7 @@ fun StudioConsoleScreen(
                         }
                         showAddEventDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF823334), contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(containerColor = CapCutCyan, contentColor = StudioBlack),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text("ADD TO TIMELINE", fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -151,36 +155,36 @@ fun StudioConsoleScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showAddEventDialog = false }) {
-                    Text("CANCEL", color = Color(0xFFA0A0B0), fontSize = 11.sp)
+                    Text("CANCEL", color = CapCutTextMuted, fontSize = 11.sp)
                 }
             },
-            modifier = Modifier.border(1.dp, Color(0xFF2A2A38), RoundedCornerShape(20.dp))
+            modifier = Modifier.border(1.dp, CapCutBorderSubtle, RoundedCornerShape(20.dp))
         )
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0C0C10))
+            .background(CapCutBackground)
     ) {
-        // ZONE 1: TOP APP BAR (CapCut Header Bar)
+        // ZONE 1: TOP APP BAR (CapCut Header Bar + Mode Toggle)
         Box(modifier = Modifier.wrapContentHeight()) {
             Zone1TopBar(
                 project = project,
+                editorMode = editorMode,
                 isAutosaving = isAutosaving,
-                lastAutosavedTime = lastAutosavedTime,
                 isExecutingEdit = isExecutingEdit,
                 onCloseProject = { viewModel.selectVideo(null) },
-                onTriggerAutosave = { viewModel.triggerManualAutosave() },
+                onToggleMode = { viewModel.toggleEditorMode() },
                 onExportClick = { viewModel.openExportModal { viewModel.executeEdit(context) } }
             )
         }
 
-        // ZONE 2: VIDEO PLAYER VIEWPORT ZONE (weight 0.48f)
+        // ZONE 2: VIDEO PLAYER VIEWPORT ZONE
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.48f)
+                .weight(if (editorMode == "prompt") 0.38f else 0.46f)
                 .padding(horizontal = 8.dp, vertical = 2.dp)
         ) {
             Zone2VideoViewport(
@@ -197,11 +201,11 @@ fun StudioConsoleScreen(
             )
         }
 
-        // ZONE 3: MULTI-TRACK TIMELINE ZONE (weight 0.42f)
+        // ZONE 3: MULTI-TRACK TIMELINE ZONE
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.42f)
+                .weight(if (editorMode == "prompt") 0.14f else 0.40f)
                 .padding(horizontal = 4.dp, vertical = 2.dp)
         ) {
             TimelineView(
@@ -214,31 +218,39 @@ fun StudioConsoleScreen(
             )
         }
 
-        // ZONE 4: BOTTOM ACTION TOOLBAR ZONE (wrapContentHeight)
+        // ZONE 4: PROMPT CHAT OR MANUAL TOOLBAR ZONE
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
+                .weight(if (editorMode == "prompt") 0.48f else 0.14f)
         ) {
-            ToolbarView(
-                viewModel = viewModel,
-                project = project,
-                overlays = overlays,
-                slides = slides,
-                timelineEvents = timelineEvents,
-                scripts = scripts,
-                audioFile = audioFile,
-                directorPrompt = directorPrompt,
-                generatedCommand = generatedCommand,
-                isGeneratingCommand = isGeneratingCommand,
-                isExecutingEdit = isExecutingEdit,
-                onAddTimelineEvent = { type, name, duration ->
-                    selectedAssetForEvent = Pair(type, name)
-                    eventStartTime = "0.0"
-                    eventEndTime = "$duration"
-                    showAddEventDialog = true
-                }
-            )
+            if (editorMode == "prompt") {
+                PromptChatView(
+                    viewModel = viewModel,
+                    chatMessages = chatMessages,
+                    isProcessingPrompt = isProcessingPrompt
+                )
+            } else {
+                ToolbarView(
+                    viewModel = viewModel,
+                    project = project,
+                    overlays = overlays,
+                    slides = slides,
+                    timelineEvents = timelineEvents,
+                    scripts = scripts,
+                    audioFile = audioFile,
+                    directorPrompt = directorPrompt,
+                    generatedCommand = generatedCommand,
+                    isGeneratingCommand = isGeneratingCommand,
+                    isExecutingEdit = isExecutingEdit,
+                    onAddTimelineEvent = { type, name, duration ->
+                        selectedAssetForEvent = Pair(type, name)
+                        eventStartTime = "0.0"
+                        eventEndTime = "$duration"
+                        showAddEventDialog = true
+                    }
+                )
+            }
         }
     }
 
@@ -265,48 +277,65 @@ fun StudioConsoleScreen(
 @Composable
 private fun Zone1TopBar(
     project: VideoEntity,
+    editorMode: String,
     isAutosaving: Boolean,
-    lastAutosavedTime: Long?,
     isExecutingEdit: Boolean,
     onCloseProject: () -> Unit,
-    onTriggerAutosave: () -> Unit,
+    onToggleMode: () -> Unit,
     onExportClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF0C0C10))
+            .background(CapCutBackground)
             .statusBarsPadding()
             .padding(horizontal = 14.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Left: X Close & Search Icon
+        // Left: X Close & Mode Toggle (🤖 AI Prompt vs ⚙️ Manual)
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             IconButton(
                 onClick = onCloseProject,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Close",
-                    tint = Color.White,
+                    tint = CapCutTextPrimary,
                     modifier = Modifier.size(20.dp)
                 )
             }
-            IconButton(
-                onClick = { },
-                modifier = Modifier.size(28.dp)
+
+            // Mode Selector Pill (🤖 Prompt Director / ⚙️ Manual Tools)
+            Surface(
+                onClick = onToggleMode,
+                color = CapCutSurfaceElevated,
+                border = BorderStroke(1.dp, if (editorMode == "prompt") CapCutCyanGlow else CapCutBorderSubtle),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.testTag("editor_mode_toggle_pill")
             ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = if (editorMode == "prompt") Icons.Default.AutoAwesome else Icons.Default.Tune,
+                        contentDescription = "Mode Toggle",
+                        tint = if (editorMode == "prompt") CapCutCyan else CapCutTextSecondary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = if (editorMode == "prompt") "AI DIRECTOR" else "MANUAL TOOLS",
+                        color = if (editorMode == "prompt") CapCutCyan else CapCutTextSecondary,
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 
@@ -315,24 +344,23 @@ private fun Zone1TopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Resolution dropdown pill (AI UHD v)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier
-                    .background(Color(0xFF1E1E28), RoundedCornerShape(14.dp))
+                    .background(CapCutSurfaceElevated, RoundedCornerShape(14.dp))
                     .padding(horizontal = 10.dp, vertical = 5.dp)
             ) {
                 Text(
-                    text = "AI UHD",
-                    color = Color.White,
+                    text = "4K UHD",
+                    color = CapCutTextPrimary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
                     contentDescription = "Resolution options",
-                    tint = Color.White,
+                    tint = CapCutTextSecondary,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -342,8 +370,8 @@ private fun Zone1TopBar(
                 onClick = onExportClick,
                 enabled = !isExecutingEdit,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF80F3FF),
-                    contentColor = Color.Black
+                    containerColor = CapCutCyan,
+                    contentColor = StudioBlack
                 ),
                 shape = RoundedCornerShape(14.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
@@ -354,16 +382,22 @@ private fun Zone1TopBar(
                 if (isExecutingEdit) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(14.dp),
-                        color = Color.Black,
+                        color = StudioBlack,
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text(
-                        text = "Export",
-                        color = Color.Black,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.IosShare, contentDescription = "Export", tint = StudioBlack, modifier = Modifier.size(14.dp))
+                        Text(
+                            text = "Export",
+                            color = StudioBlack,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
