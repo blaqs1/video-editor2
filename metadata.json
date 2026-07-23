@@ -1,0 +1,6 @@
+{
+  "name": "Studio Minimal",
+  "description": "High-end monochromatic generative AI video editor and remote controller.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
